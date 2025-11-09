@@ -1,0 +1,44 @@
+---
+description: n8n integration foundation — webhook orchestration, payload schema, and error strategy
+# Activation hints:
+# - PROJECT_BRIEF.md: framework: "n8n"
+# - Env: N8N_WEBHOOK_URL present
+# - Files: n8n_client.*, /tools/n8n/*
+---
+
+# N8N FOUNDATION
+
+## Flow
+- `POST /agent/run`:
+  1) Validate payload `{ projectId, input }`
+  2) POST to `N8N_WEBHOOK_URL` with `{ projectId, input, user, meta }`
+  3) Store a **queued** job in Redis: `job:{id}` with status `queued`
+- n8n responds asynchronously to your callback (or you poll a status endpoint).
+
+## Callback / Polling
+- Provide `/api/n8n_client.(py|ts)` with:
+  - `trigger_workflow(payload) -> job_id`
+  - `get_status(job_id) -> {status, result?}`
+- `/jobs/{id}` consults Redis **first**, else queries n8n if configured.
+
+## Mapping
+- Keep a tiny map for flows: `FLOW_NAME` or `FLOW_ID` in env.
+- Ensure any secrets to n8n are **never** logged.
+
+## Adapter Contract (MANDATORY)
+- `runAgent(input, context)` delegates to n8n:
+  - Build payload
+  - Trigger webhook
+  - Return an interim `{ text: "Job queued", meta: { jobId } }` or the final response if synchronous.
+
+## Errors & Retries
+- Timeouts at 10s on webhook; 2 retries with backoff (1s, 3s).
+- If n8n returns 4xx/5xx, map to `{ status:"error", code, message }`.
+
+## Tests
+- Mock n8n client to instantly return a canned `{status:"done", result:{text:"ok"}}`.
+- Flow test ensures `/agent/run` → `/jobs/{id}` works with fake client.
+
+## Files to Create (if missing)
+- `/api/n8n_client.py` (or `.ts`)
+- `/api/adapter_n8n.py` (or `.ts`)

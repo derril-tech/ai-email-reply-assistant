@@ -1,0 +1,47 @@
+# Cursor Rules — AI-EMAIL-REPLY-ASSISTANT
+
+## Stack
+- Frontend: Next.js 15.1 (React 19, App Router), Tailwind, shadcn/ui
+- Backend: FastAPI (Python 3.11+)
+- DB: Supabase (schema: emailreply)
+- Cache/Queue: Upstash Redis (prefix: emailreply)
+- Hosting: Railway (web + api)
+
+## Required Endpoints
+POST /agent/run      # { projectId, input, meta?: { threadId, tone, length, bullets } } → { jobId }
+GET  /jobs/{id}      # → { status, result? }
+GET  /messages?projectId  # → { items: [...] }
+
+## Frontend Routes
+/ , /dashboard , /playground
+
+## Persistence
+- Tables: profiles, projects, messages, jobs, oauth_tokens, gmail_threads
+- Redis keys:
+  - emailreply:job:{id}
+  - emailreply:rate:{bucket}
+  - emailreply:cache:thread:{threadId}
+
+## Env (must reference)
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+OPENAI_API_KEY
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+SUPABASE_SERVICE_ROLE
+SUPABASE_SCHEMA
+REDIS_PREFIX
+RAILWAY_PUBLIC_DOMAIN
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_OAUTH_REDIRECT_URI
+GOOGLE_PROJECT_ID
+GMAIL_LABEL_WHITELIST
+
+## Conventions
+- Never hardcode secrets.
+- Async I/O; small, composable modules.
+- Use `useAgent(projectId)` hook for runs & polling.
+- System prompts enforce tone, safety, and PII minimization.
+
+

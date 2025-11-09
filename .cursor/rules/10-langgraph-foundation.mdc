@@ -1,0 +1,39 @@
+---
+description: LangGraph project foundation — graph nodes, state schema, runner, and persistence
+# Activation hints:
+# - PROJECT_BRIEF.md: framework: "langgraph"
+# - Files: graph.py, nodes/*.py, langgraph.* imports
+# - Folders: /graph, /nodes
+---
+
+# LANGGRAPH FOUNDATION
+
+## Graph Structure
+- Keep a **small DAG**: `ingest -> plan -> call_model -> postprocess`.
+- Place nodes in `/nodes/` as pure functions with typed I/O.
+- State schema: pydantic model `GraphState` with `input`, `steps[]`, `result`.
+
+## Runner
+- Provide `/api/langgraph_runner.py` to:
+  1. Build the graph lazily
+  2. Execute with time+step limits (e.g., 15s, 8 steps)
+  3. Return `{ text, meta }` from final node
+
+## Adapter Contract (MANDATORY)
+- API uses: `runAgent(input, context)` that invokes the graph runner.
+
+## Persistence
+- Minimal: persist **inputs/outputs** to `messages` table.
+- (Optional) persist intermediate `steps` into `jobs.result.meta.steps` (short list).
+
+## Tools & Retrieval
+- If a tool is needed, wrap it as a node (`tool_x_node`) and record `meta.tools[]`.
+
+## Tests
+- Unit-test each node (pure functions).
+- Graph smoke test: ensure happy-path with fake model returns within 2s.
+
+## Files to Create (if missing)
+- `/graph/graph.py` (assemble DAG)
+- `/nodes/{ingest,plan,call_model,postprocess}.py`
+- `/api/langgraph_runner.py`

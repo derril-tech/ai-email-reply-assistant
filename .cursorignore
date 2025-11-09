@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.*
+web/.next
+api/.venv
+dist
+.next
+.DS_Store
+
+

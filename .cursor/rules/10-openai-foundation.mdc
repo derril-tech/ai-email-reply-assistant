@@ -1,0 +1,42 @@
+---
+description: OpenAI SDK project foundation — adapter contract, prompt hygiene, tooling, and error handling
+# Activation hints:
+# - PROJECT_BRIEF.md: framework: "openai-sdk"
+# - Files: adapter_openai.(ts|py), openai.json, openaiAdapter.*
+# - Imports: "openai", "@ai-sdk/*", "openai-edge"
+---
+
+# OPENAI SDK FOUNDATION
+
+## Adapter Contract (MANDATORY)
+Implement a single adapter callable by the API layer:
+
+- **Signature:** `runAgent(input, context) -> { text: string, meta?: object }`
+- **Context:** { projectId, userId?, tools?, external?, supabase, redis, logger }
+- **Location:** `/api/adapter_openai.py` (Python) **or** `/api/adapter_openai.ts` (TS)
+
+## Prompt Hygiene
+- Keep prompts **in code** as small templates; parameterize product fields.
+- Use **system → user → assistant** message roles; avoid giant “catch-all” prompts.
+- Prefer **tool-augmented** patterns (retrieval or API call) over huge context pastes.
+
+## Model & Params
+- Default to small/good models for cost/latency.
+- Temperature configurable via env (`OPENAI_TEMPERATURE`, default `0.4`).
+- Respect per-project rate limits (Redis bucket: `rate:{prefix}:{ip}`).
+
+## Streaming (Optional)
+- If using streaming, keep a simple server-sent events pattern.
+- Still persist final message to Supabase `messages`.
+
+## Error Handling
+- Wrap API calls with timeouts; map OpenAI errors to `{ status:"error", code, message }`.
+- Fallback: return a **concise** error message to UI; never leak secrets.
+
+## Tests
+- Monkeypatch OpenAI client to return `{ text:"ok", meta:{} }`.
+- Smoke test: `/agent/run` → `/jobs/{id}` completes within 2s in CI.
+
+## Files to Create (if missing)
+- `/api/adapter_openai.py` (or `.ts`)
+- `/api/openai_client.py` with a tiny helper that reads `OPENAI_API_KEY`.

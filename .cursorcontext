@@ -1,0 +1,9 @@
+# Always load these into Cursor's working memory
+PROJECT_BRIEF.md
+ARCH.md
+PLAN.md
+TODO.md
+BOOTSTRAP.md
+PROMPTS.md
+
+

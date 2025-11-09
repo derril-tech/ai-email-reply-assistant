@@ -1,0 +1,40 @@
+---
+description: AutoGen project foundation — multi-agent chat loop, roles, tools, and loop controls
+# Activation hints:
+# - PROJECT_BRIEF.md: framework: "autogen"
+# - Imports: "autogen", "autogen-agentchat"
+# - Folders: /agents, /tools
+---
+
+# AUTOGEN FOUNDATION
+
+## Agents
+- Define a **minimum pair**: `UserProxy` (drives task) + `Assistant` (model).
+- Each agent has: role, goals, constraints, and **message filters** to avoid loops.
+
+## Loop Control
+- Hard cap: `max_turns` (≤ 8) and `max_tokens` per turn.
+- If no progress in 2 turns, **stop** and return best partial result.
+
+## Tools
+- Tools must be explicit and safe: whitelist functions, sanitize inputs.
+- Record each tool call in `meta.tools[]` with `{name, args, ok}`.
+
+## Adapter Contract (MANDATORY)
+- `runAgent(input, context)` should:
+  1) Build agents & register tools
+  2) Run the conversation up to `max_turns`
+  3) Return `{ text, meta }` with transcript summary (not full logs)
+
+## Persistence
+- Save the **final** assistant reply to `messages`.
+- Save a short **trace** (last 5 turns) in `jobs.result.meta.trace`.
+
+## Tests
+- Mock the assistant to return a deterministic answer on first turn.
+- Flow test: ensure it terminates ≤ 2s and ≤ `max_turns`.
+
+## Files to Create (if missing)
+- `/agents/{user_proxy.py,assistant.py}`
+- `/tools/{tool_example.py}`
+- `/api/autogen_runner.py`

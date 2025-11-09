@@ -1,0 +1,18 @@
+---
+description: Always-on guardrails for persistence, planning, and continuity across sessions
+alwaysApply: true
+---
+
+
+
+**When returning after inactivity**, ALWAYS re-read previous chat and files and summarize the current state before editing.
+
+
+
+# PRAGMATICS
+
+- Prefer small, iterative commits; after any nontrivial change, update and If instructions conflict, ask briefly in chat AND propose the safest default path 
+
+
+
+

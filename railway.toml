@@ -1,0 +1,25 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+
+[variables]
+# Shared defaults (override in Railway dashboard as needed)
+SUPABASE_SCHEMA = "emailreply"
+REDIS_PREFIX = "emailreply"
+
+[services.api]
+root = "api"
+# Nixpacks detects Python; ensure uvicorn is used for FastAPI
+start = "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+healthcheckPath = "/jobs/health"
+env = { PORT = "8000" }
+
+[services.web]
+root = "web"
+# Nixpacks detects Node; adjust when package.json is present
+start = "npm run start -- -p ${PORT:-3000}"
+env = { PORT = "3000", NEXT_PUBLIC_SUPABASE_URL = "", NEXT_PUBLIC_SUPABASE_ANON_KEY = "" }
+
+

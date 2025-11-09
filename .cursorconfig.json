@@ -1,0 +1,16 @@
+{
+    "model": "gpt-5",
+    "temperature": 0.2,
+    "max_context_tokens": 16000,
+    "auto_save": true,
+    "fast_mode": true,
+    "prioritize_files": [
+      "PROJECT_BRIEF.md",
+      "ARCH.md",
+      "PLAN.md",
+      "TODO.md",
+      "BOOTSTRAP.md"
+    ]
+  }
+  
+
