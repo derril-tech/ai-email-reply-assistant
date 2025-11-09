@@ -12,7 +12,8 @@ REDIS_PREFIX = "emailreply"
 [services.api]
 root = "api"
 # Nixpacks detects Python; ensure uvicorn is used for FastAPI
-start = "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# With root set to /api, the app import is `main:app`
+start = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
 healthcheckPath = "/jobs/health"
 env = { PORT = "8000" }
 

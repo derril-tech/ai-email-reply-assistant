@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os, uuid, time, json
 
-from api.adapters.openai_email_reply import draft_reply
-from api.services.gmail import resolve_oauth_token, fetch_thread_text
-from api.services.persistence import write_job_to_redis, persist_message_to_supabase
+from adapters.openai_email_reply import draft_reply
+from services.gmail import resolve_oauth_token, fetch_thread_text
+from services.persistence import write_job_to_redis, persist_message_to_supabase
 
 APP_NAME = "emailreply"
 PREFIX = os.getenv("REDIS_PREFIX", APP_NAME)
