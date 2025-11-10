@@ -7,13 +7,23 @@ import { Inter, DM_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import type { ReactNode } from "react";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-display", display: "swap" });
+const inter = Inter({ 
+	subsets: ["latin"], 
+	variable: "--font-sans", 
+	display: "swap",
+	weight: ["400", "500", "600", "700"]
+});
+const dmSans = DM_Sans({ 
+	subsets: ["latin"], 
+	variable: "--font-display", 
+	display: "swap",
+	weight: ["400", "500", "600", "700"]
+});
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
-			<body className={`${inter.variable} ${dmSans.variable} min-h-dvh bg-background text-foreground antialiased`}>
+		<html lang="en" suppressHydrationWarning className="font-sans">
+			<body className={`${inter.variable} ${dmSans.variable} min-h-dvh bg-background text-foreground antialiased font-sans`}>
 				<ThemeProvider>
 					<div className="flex min-h-dvh flex-col">
 						<NavBar />

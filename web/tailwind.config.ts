@@ -10,6 +10,10 @@ const config: Config = {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+				display: ["var(--font-display)", "system-ui", "sans-serif"],
+			},
 			colors: {
 				primary: {
 					DEFAULT: "#5B86E5",
