@@ -44,7 +44,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 			}
 		} catch {}
 		setTheme(initial);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const value = React.useMemo(() => ({ theme, setTheme }), [theme, setTheme]);

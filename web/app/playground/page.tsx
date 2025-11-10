@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -12,7 +11,7 @@ type UIState = "hero" | "threadPicker" | "compose" | "result";
 export default function PlaygroundPage() {
 	const [ui, setUi] = useState<UIState>("hero");
 	const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-	const [tone, setTone] = useState("friendly");
+	const [tone, setTone] = useState<"friendly" | "formal" | "brief">("friendly");
 	const [length, setLength] = useState<number>(150);
 	const [bullets, setBullets] = useState<boolean>(false);
 	const { run, status, result } = useAgent("default");
@@ -107,7 +106,7 @@ export default function PlaygroundPage() {
 								Tone
 								<select
 									value={tone}
-									onChange={(e) => setTone(e.target.value)}
+									onChange={(e) => setTone(e.target.value as "friendly" | "formal" | "brief")}
 									className="ml-2 rounded-md border border-border bg-background px-2 py-1 text-sm"
 								>
 									<option value="friendly">friendly</option>
@@ -172,8 +171,7 @@ export default function PlaygroundPage() {
 							className="rounded-md border border-border bg-background px-3 py-2 text-sm"
 							onClick={() => {
 								navigator.clipboard.writeText(result?.text || "");
-								t
-								oast.success("Copied to clipboard");
+								toast.success("Copied to clipboard");
 							}}
 						>
 							📋 Copy
