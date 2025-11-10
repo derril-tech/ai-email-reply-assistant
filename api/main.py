@@ -14,9 +14,15 @@ app = FastAPI(title="AI Email Reply Assistant API")
 
 # CORS (Railway domain + local dev)
 railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+web_origin = os.getenv("WEB_RAILWAY_URL")
+vercel_url = os.getenv("NEXT_PUBLIC_VERCEL_URL")
+app_url = os.getenv("NEXT_PUBLIC_APP_URL")
 allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 if railway_domain:
     allowed_origins.append(f"https://{railway_domain}")
+for origin in (web_origin, vercel_url, app_url):
+    if origin:
+        allowed_origins.append(origin if origin.startswith("http") else f"https://{origin}")
 
 app.add_middleware(
     CORSMiddleware,
