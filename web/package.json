@@ -10,6 +10,7 @@
     "lint": "eslint . --ext .ts,.tsx --max-warnings=0"
   },
   "dependencies": {
+    "critters": "^0.0.22",
     "next": "15.1.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
