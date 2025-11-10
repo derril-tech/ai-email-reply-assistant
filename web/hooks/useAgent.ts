@@ -15,13 +15,15 @@ export function useAgent(projectId: string) {
 	const [error, setError] = useState<string | null>(null);
 	const [result, setResult] = useState<any | null>(null);
 
+	const base = process.env.NEXT_PUBLIC_API_URL || "";
+
 	async function run(args: RunArgs) {
 		const { input, meta } = args;
 		try {
 			setStatus("running");
 			setError(null);
 			setResult(null);
-			const r = await fetch("/agent/run", {
+			const r = await fetch(`${base}/agent/run`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ projectId, input, meta }),
@@ -34,7 +36,7 @@ export function useAgent(projectId: string) {
 
 			let finalResult: any = null;
 			for (let i = 0; i < 40; i++) {
-				const jr = await fetch(`/jobs/${jobId}`);
+				const jr = await fetch(`${base}/jobs/${jobId}`);
 				const data = await jr.json();
 				if (data.status === "done") {
 					finalResult = data.result;

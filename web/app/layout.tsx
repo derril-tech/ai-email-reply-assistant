@@ -6,9 +6,10 @@ import BottomNav from "../components/BottomNav";
 import { Inter, DM_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-display", display: "swap" });
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-	const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-	const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={`${inter.variable} ${dmSans.variable} min-h-dvh bg-background text-foreground antialiased`}>
