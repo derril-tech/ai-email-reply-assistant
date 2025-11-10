@@ -16,11 +16,13 @@ root = "api"
 start = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
 healthcheckPath = "/jobs/health"
 env = { PORT = "8000" }
+watch = ["api/**"]
 
 [services.web]
 root = "web"
 # Nixpacks detects Node; adjust when package.json is present
 start = "npm run start -- -p ${PORT:-3000}"
 env = { PORT = "3000", NEXT_PUBLIC_SUPABASE_URL = "", NEXT_PUBLIC_SUPABASE_ANON_KEY = "" }
+watch = ["web/**"]
 
 
