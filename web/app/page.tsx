@@ -14,7 +14,7 @@ export default function Page() {
 					<h1 className="text-4xl md:text-6xl font-semibold tracking-tight font-display text-foreground drop-shadow-lg">
 						Reply smarter. <span className="text-white">Faster.</span> Politer.
 					</h1>
-					<p className="mt-4 max-w-2xl text-foreground/90 leading-relaxed drop-shadow-md">
+					<p className="mt-4 max-w-2xl mx-auto text-foreground/90 leading-relaxed drop-shadow-md text-center">
 						Draft contextual replies from Gmail threads with one click.
 					</p>
 					<div className="mt-6 flex gap-3 justify-center">

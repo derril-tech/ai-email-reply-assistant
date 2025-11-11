@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Github, Twitter } from "lucide-react";
+import { Mail, Github, Linkedin } from "lucide-react";
 
 export default function Footer() {
 	return (
@@ -11,7 +11,7 @@ export default function Footer() {
 						Reply Smarter. Faster. Politer.
 					</p>
 					<p className="mt-2 text-sm text-muted-foreground">
-						Draft contextual email replies with AI assistance.
+						Created by Derril Filemon
 					</p>
 				</div>
 				<div>
@@ -47,14 +47,14 @@ export default function Footer() {
 					<h3 className="font-display text-base font-semibold">Connect</h3>
 					<div className="mt-3 flex flex-col gap-2 text-sm">
 						<a 
-							href="mailto:hello@example.com" 
+							href="mailto:cashcrumbs@gmail.com" 
 							className="inline-flex items-center gap-2 text-muted-foreground transition-all hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 						>
 							<Mail className="h-4 w-4" />
-							hello@example.com
+							cashcrumbs@gmail.com
 						</a>
 						<a 
-							href="https://github.com" 
+							href="https://github.com/derril-tech" 
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 text-muted-foreground transition-all hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
@@ -63,13 +63,13 @@ export default function Footer() {
 							GitHub
 						</a>
 						<a 
-							href="https://twitter.com" 
+							href="https://www.linkedin.com/in/derril-filemon-a31715319" 
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 text-muted-foreground transition-all hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
 						>
-							<Twitter className="h-4 w-4" />
-							Twitter
+							<Linkedin className="h-4 w-4" />
+							LinkedIn
 						</a>
 					</div>
 				</div>
