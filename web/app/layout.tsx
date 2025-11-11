@@ -6,6 +6,7 @@ import BottomNav from "../components/BottomNav";
 import { Inter, DM_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 
 const inter = Inter({ 
 	subsets: ["latin"], 
@@ -19,6 +20,15 @@ const dmSans = DM_Sans({
 	display: "swap",
 	weight: ["400", "500", "600", "700"]
 });
+
+export const metadata: Metadata = {
+	title: "AI Email Reply Assistant",
+	description: "Draft contextual email replies from Gmail threads with one click. Reply smarter, faster, and politer.",
+	icons: {
+		icon: "/favicon.ico",
+		apple: "/logo.png",
+	},
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (

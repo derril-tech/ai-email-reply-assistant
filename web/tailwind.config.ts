@@ -15,41 +15,30 @@ const config: Config = {
 				display: ["var(--font-display)", "system-ui", "sans-serif"],
 			},
 			colors: {
-				primary: {
-					DEFAULT: "#5B86E5",
-					dark: "#4472CA",
-					fg: "#FFFFFF",
-				},
-				secondary: {
-					DEFAULT: "#FFD166",
-					dark: "#E6B85C",
-					fg: "#1A1A1A",
-				},
-				base: {
-					DEFAULT: "#F9FAFB",
-					dark: "#0D1117",
-				},
-				surface: {
-					DEFAULT: "#FFFFFF",
-					dark: "#1E222A",
-				},
-				text: {
-					DEFAULT: "#1A1A1A",
-					dark: "#F4F4F4",
-					muted: "#6B7280",
-				},
+				// New 2025 brand colors
+				pink: { DEFAULT: "#EF476F" },
+				gold: { DEFAULT: "#FFD166", dark: "#E6B85C" },
+				teal: { DEFAULT: "#06D6A0" },
+				azure: { DEFAULT: "#118AB2" },
+				navy: { DEFAULT: "#073B4C" },
+				
+				// Semantic shadcn/ui tokens (via CSS vars)
 				border: "hsl(var(--border))",
 				input: "hsl(var(--input))",
 				ring: "hsl(var(--ring))",
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",
-				primaryToken: {
+				primary: {
 					DEFAULT: "hsl(var(--primary))",
 					foreground: "hsl(var(--primary-foreground))",
 				},
-				secondaryToken: {
+				secondary: {
 					DEFAULT: "hsl(var(--secondary))",
 					foreground: "hsl(var(--secondary-foreground))",
+				},
+				destructive: {
+					DEFAULT: "hsl(var(--destructive))",
+					foreground: "hsl(var(--destructive-foreground))",
 				},
 				muted: {
 					DEFAULT: "hsl(var(--muted))",
@@ -68,16 +57,34 @@ const config: Config = {
 					foreground: "hsl(var(--card-foreground))",
 				},
 			},
+			spacing: {
+				18: "4.5rem",
+				22: "5.5rem",
+			},
 			borderRadius: {
-				xl: "1rem",
+				xl: "0.9rem",
 				"2xl": "1.25rem",
 			},
 			boxShadow: {
-				soft: "0 8px 30px rgba(0,0,0,0.06)",
-				glass: "0 10px 40px rgba(0,0,0,0.12)",
+				soft: "0 8px 28px rgba(2, 8, 23, 0.08)",
+				glass: "0 10px 40px rgba(2, 8, 23, 0.15)",
 			},
 			backdropBlur: {
 				xs: "2px",
+			},
+			animation: {
+				"fade-in": "fade-in 300ms ease-out",
+				"slide-up": "slide-up 300ms ease-out",
+			},
+			keyframes: {
+				"fade-in": {
+					from: { opacity: "0" },
+					to: { opacity: "1" },
+				},
+				"slide-up": {
+					from: { transform: "translateY(8px)", opacity: "0" },
+					to: { transform: "translateY(0)", opacity: "1" },
+				},
 			},
 		},
 	},

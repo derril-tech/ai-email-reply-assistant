@@ -4,8 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useAgent } from "../../hooks/useAgent";
 import LoaderDots from "../../components/LoaderDots";
 import EmptyState from "../../components/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Card } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { History, X, Copy, Send, RefreshCw } from "lucide-react";
 
 type UIState = "hero" | "threadPicker" | "compose" | "result";
 
@@ -24,7 +29,7 @@ export default function PlaygroundPage() {
 	const [bullets, setBullets] = useState<boolean>(false);
 	const [showHistory, setShowHistory] = useState<boolean>(false);
 	const [history, setHistory] = useState<DraftHistory[]>([]);
-	const { run, status, result, messages } = useAgent("default");
+	const { run, status, result } = useAgent("default");
 
 	const threads = [
 		{ id: "t1", subject: "Q3 Planning", snippet: "Let's align on the next steps..." },
@@ -34,7 +39,6 @@ export default function PlaygroundPage() {
 	useEffect(() => {
 		if (status === "done") {
 			toast.success("Reply generated successfully");
-			// Add to history
 			if (result?.text && selectedThreadId) {
 				const threadSubject = threads.find((t) => t.id === selectedThreadId)?.subject || "Unknown";
 				setHistory((prev) => [
@@ -49,7 +53,7 @@ export default function PlaygroundPage() {
 			}
 		}
 		if (status === "error") toast.error("Failed to generate reply");
-	}, [status, result, selectedThreadId, threads]);
+	}, [status, result, selectedThreadId]);
 
 	const section = useMemo(
 		() => ({
@@ -67,47 +71,47 @@ export default function PlaygroundPage() {
 			{history.length > 0 && (
 				<button
 					onClick={() => setShowHistory(!showHistory)}
-					className="fixed right-4 top-20 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-glass transition-all hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:hidden"
+					className="fixed right-4 top-20 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glass transition-all hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring md:hidden"
 					aria-label="Toggle history"
 				>
-					📜
+					<History className="h-5 w-5" />
 				</button>
 			)}
 
 			{/* History Sidebar */}
 			<AnimatePresence>
-				{(showHistory || window.innerWidth >= 1024) && history.length > 0 && (
+				{showHistory && history.length > 0 && (
 					<motion.aside
 						initial={{ x: "100%" }}
 						animate={{ x: 0 }}
 						exit={{ x: "100%" }}
 						transition={{ type: "spring", stiffness: 300, damping: 30 }}
-						className="fixed right-0 top-16 bottom-0 z-40 w-80 overflow-y-auto bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl p-6 shadow-glass lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:z-0"
+						className="fixed right-0 top-16 bottom-0 z-40 w-80 overflow-y-auto glass border-l p-6 shadow-glass"
 					>
 						<div className="flex items-center justify-between mb-4">
-							<h3 className="text-lg font-semibold text-text font-display">Draft History</h3>
+							<h3 className="text-lg font-semibold font-display">Draft History</h3>
 							<button
 								onClick={() => setShowHistory(false)}
-								className="lg:hidden text-text/70 hover:text-text"
+								className="text-muted-foreground hover:text-foreground"
 								aria-label="Close history"
 							>
-								✕
+								<X className="h-5 w-5" />
 							</button>
 						</div>
 						<div className="space-y-3">
 							{history.map((draft) => (
-								<div
+								<Card
 									key={draft.id}
-									className="rounded-lg border border-border bg-background p-3 text-sm transition-all hover:shadow-soft cursor-pointer"
+									className="p-3 text-sm cursor-pointer hover:shadow-soft"
 									onClick={() => {
 										toast.success("Draft loaded");
 										setShowHistory(false);
 									}}
 								>
-									<div className="font-medium text-text">{draft.threadSubject}</div>
-									<div className="text-xs text-text/50 mt-1">{draft.createdAt}</div>
-									<div className="text-xs text-text/70 mt-2 line-clamp-2">{draft.text}</div>
-								</div>
+									<div className="font-medium">{draft.threadSubject}</div>
+									<div className="text-xs text-muted-foreground mt-1">{draft.createdAt}</div>
+									<div className="text-xs text-muted-foreground mt-2 line-clamp-2">{draft.text}</div>
+								</Card>
 							))}
 						</div>
 					</motion.aside>
@@ -116,180 +120,167 @@ export default function PlaygroundPage() {
 
 			{/* Main Content */}
 			<div className="grid gap-6">
-			<AnimatePresence mode="wait">
-				{ui === "hero" && (
-					<motion.section {...section} className="rounded-2xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl p-12 text-center shadow-glass">
-					<h1 className="text-3xl md:text-4xl font-semibold text-text font-display">AI Email Reply Playground</h1>
-					<p className="mt-3 text-base text-text/70">Connect Gmail to get started.</p>
-					<div className="mt-8">
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.98 }}
-							className="rounded-lg bg-gradient-to-r from-primary to-secondary px-6 py-3 text-sm font-medium text-white shadow-soft transition-all hover:shadow-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-							onClick={() => setUi("threadPicker")}
-						>
-							Connect Gmail
-						</motion.button>
-					</div>
-					</motion.section>
-				)}
-			</AnimatePresence>
-
-			<AnimatePresence mode="wait">
-				{ui === "threadPicker" && (
-					<motion.section {...section} className="rounded-2xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl p-6 shadow-soft">
-					<div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-						<h2 className="text-xl font-semibold text-text font-display">Threads</h2>
-						<input
-							placeholder="Search threads..."
-							className="rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-						/>
-					</div>
-					{threads.length === 0 ? (
-						<EmptyState
-							icon="📭"
-							title="No threads found"
-							description="Connect your Gmail account to see your email threads here."
-						/>
-					) : (
-						<ul className="divide-y divide-border">
-							{threads.map((t) => (
-								<motion.li
-									key={t.id}
-									whileHover={{ backgroundColor: "rgba(91, 134, 229, 0.05)" }}
-									className="flex cursor-pointer items-center justify-between py-3 rounded-md px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-									onClick={() => {
-										setSelectedThreadId(t.id);
-										setUi("compose");
-									}}
-									tabIndex={0}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											setSelectedThreadId(t.id);
-											setUi("compose");
-										}
-									}}
-								>
-									<div>
-										<div className="text-sm font-medium text-text">{t.subject}</div>
-										<div className="text-xs text-text/60">{t.snippet}</div>
-									</div>
-									<div className="text-xs text-text/50">today</div>
-								</motion.li>
-							))}
-						</ul>
+				<AnimatePresence mode="wait">
+					{ui === "hero" && (
+						<motion.section {...section}>
+							<Card className="p-12 text-center">
+								<h1 className="text-3xl md:text-4xl font-semibold font-display">AI Email Reply Playground</h1>
+								<p className="mt-3 text-base text-muted-foreground">Connect Gmail to get started.</p>
+								<div className="mt-8">
+									<Button size="lg" onClick={() => setUi("threadPicker")}>
+										Connect Gmail
+									</Button>
+								</div>
+							</Card>
+						</motion.section>
 					)}
-					</motion.section>
-				)}
-			</AnimatePresence>
+				</AnimatePresence>
 
-			<AnimatePresence mode="wait">
-				{ui === "compose" && (
-					<motion.section {...section} className="grid gap-6 lg:grid-cols-2">
-					<div className="rounded-2xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl p-6 shadow-soft">
-						<h3 className="text-base font-semibold text-text font-display">Thread Context</h3>
-						<div className="mt-3 h-64 overflow-auto rounded-md border border-border p-3 text-sm text-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" tabIndex={0}>
-							<p><strong>Subject:</strong> {(threads.find((t) => t.id === selectedThreadId) || {}).subject}</p>
-							<p className="mt-2">
-								<strong>Preview:</strong> {(threads.find((t) => t.id === selectedThreadId) || {}).snippet}
-							</p>
-						</div>
-					</div>
-					<div className="rounded-2xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl p-6 shadow-soft">
-						<h3 className="text-base font-semibold text-text font-display">Draft Controls</h3>
-						<div className="mt-4 grid gap-4">
-							<label className="flex flex-col gap-2 text-sm text-text/70">
-								<span className="font-medium">Tone</span>
-								<select
-									value={tone}
-									onChange={(e) => setTone(e.target.value as "friendly" | "formal" | "brief")}
-									className="rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-								>
-									<option value="friendly">Friendly</option>
-									<option value="formal">Formal</option>
-									<option value="brief">Brief</option>
-								</select>
-							</label>
-							<label className="flex flex-col gap-2 text-sm text-text/70">
-								<span className="font-medium">Length: {length} words</span>
-								<input
-									type="range"
-									min={50}
-									max={500}
-									value={length}
-									onChange={(e) => setLength(parseInt(e.target.value, 10))}
-									className="w-full accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
-								/>
-							</label>
-							<label className="flex items-center gap-2 text-sm text-text/70">
-								<input
-									type="checkbox"
-									checked={bullets}
-									onChange={(e) => setBullets(e.target.checked)}
-									className="h-4 w-4 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
-								/>
-								<span className="font-medium">Use bullet points</span>
-							</label>
-							<motion.button
-								whileHover={{ scale: 1.02 }}
-								whileTap={{ scale: 0.98 }}
-								className="mt-2 w-full rounded-lg bg-gradient-to-r from-primary to-secondary px-4 py-3 text-sm font-medium text-white shadow-soft transition-all hover:shadow-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-								onClick={async () => {
-									if (!selectedThreadId) return;
-									setUi("result");
-									await run({
-										input: "",
-										meta: { threadId: selectedThreadId, tone, length, bullets },
-									});
-								}}
-								disabled={status === "running"}
-							>
-								{status === "running" ? <LoaderDots label="Composing polite reply" /> : "Generate Reply"}
-							</motion.button>
-						</div>
-					</div>
-					</motion.section>
-				)}
-			</AnimatePresence>
+				<AnimatePresence mode="wait">
+					{ui === "threadPicker" && (
+						<motion.section {...section}>
+							<Card className="p-6">
+								<div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+									<h2 className="text-xl font-semibold font-display">Threads</h2>
+									<Input placeholder="Search threads..." className="md:w-64" />
+								</div>
+								{threads.length === 0 ? (
+									<EmptyState
+										icon="📭"
+										title="No threads found"
+										description="Connect your Gmail account to see your email threads here."
+									/>
+								) : (
+									<ul className="divide-y divide-border">
+										{threads.map((t) => (
+											<motion.li
+												key={t.id}
+												whileHover={{ backgroundColor: "var(--accent)" }}
+												className="flex cursor-pointer items-center justify-between py-3 rounded-md px-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+												onClick={() => {
+													setSelectedThreadId(t.id);
+													setUi("compose");
+												}}
+												tabIndex={0}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														setSelectedThreadId(t.id);
+														setUi("compose");
+													}
+												}}
+											>
+												<div>
+													<div className="text-sm font-medium">{t.subject}</div>
+													<div className="text-xs text-muted-foreground">{t.snippet}</div>
+												</div>
+												<div className="text-xs text-muted-foreground">today</div>
+											</motion.li>
+										))}
+									</ul>
+								)}
+							</Card>
+						</motion.section>
+					)}
+				</AnimatePresence>
 
-			<AnimatePresence mode="wait">
-				{ui === "result" && (
-					<motion.section {...section} className="rounded-2xl bg-white/80 dark:bg-neutral-900/60 backdrop-blur-xl p-6 shadow-soft">
-					<h3 className="text-base font-semibold text-text font-display">Draft</h3>
-					<div className="mt-3 whitespace-pre-wrap rounded-md border border-border p-4 text-sm text-text/90 min-h-[200px]" aria-live="polite">
-						{status === "running" ? <LoaderDots label="Generating" /> : (result?.text || "Your draft will appear here.")}
-					</div>
-					<div className="mt-6 flex flex-wrap gap-3">
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							className="rounded-lg border-2 border-primary bg-transparent px-4 py-2 text-sm font-medium text-primary transition-all hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-							onClick={() => setUi("compose")}
-						>
-							🔁 Regenerate
-						</motion.button>
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							className="rounded-lg border-2 border-secondary bg-transparent px-4 py-2 text-sm font-medium text-secondary transition-all hover:bg-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
-							onClick={() => {
-								navigator.clipboard.writeText(result?.text || "");
-								toast.success("Copied to clipboard");
-							}}
-						>
-							📋 Copy
-						</motion.button>
-						<motion.button 
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							className="rounded-lg bg-gradient-to-r from-primary to-secondary px-4 py-2 text-sm font-medium text-white shadow-soft transition-all hover:shadow-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-						>
-							✉️ Send via Gmail
-						</motion.button>
-					</div>
-					</motion.section>
-				)}
-			</AnimatePresence>
+				<AnimatePresence mode="wait">
+					{ui === "compose" && (
+						<motion.section {...section} className="grid gap-6 lg:grid-cols-2">
+							<Card className="p-6">
+								<h3 className="text-base font-semibold font-display">Thread Context</h3>
+								<div className="mt-3 h-64 overflow-auto rounded-md border border-border p-3 text-sm focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
+									<p><strong>Subject:</strong> {threads.find((t) => t.id === selectedThreadId)?.subject}</p>
+									<p className="mt-2">
+										<strong>Preview:</strong> {threads.find((t) => t.id === selectedThreadId)?.snippet}
+									</p>
+								</div>
+							</Card>
+							<Card className="p-6">
+								<h3 className="text-base font-semibold font-display">Draft Controls</h3>
+								<div className="mt-4 grid gap-4">
+									<label className="flex flex-col gap-2 text-sm">
+										<span className="font-medium">Tone</span>
+										<select
+											value={tone}
+											onChange={(e) => setTone(e.target.value as "friendly" | "formal" | "brief")}
+											className="rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<option value="friendly">Friendly</option>
+											<option value="formal">Formal</option>
+											<option value="brief">Brief</option>
+										</select>
+									</label>
+									<label className="flex flex-col gap-2 text-sm">
+										<span className="font-medium">Length: {length} words</span>
+										<Slider
+											value={[length]}
+											onValueChange={(values: number[]) => setLength(values[0])}
+											min={50}
+											max={500}
+											step={10}
+										/>
+									</label>
+									<label className="flex items-center gap-2 text-sm">
+										<input
+											type="checkbox"
+											checked={bullets}
+											onChange={(e) => setBullets(e.target.checked)}
+											className="h-4 w-4 accent-primary rounded"
+										/>
+										<span className="font-medium">Use bullet points</span>
+									</label>
+									<Button
+										className="mt-2 w-full"
+										onClick={async () => {
+											if (!selectedThreadId) return;
+											setUi("result");
+											await run({
+												input: "",
+												meta: { threadId: selectedThreadId, tone, length, bullets },
+											});
+										}}
+										disabled={status === "running"}
+									>
+										{status === "running" ? <LoaderDots label="Composing polite reply" /> : "Generate Reply"}
+									</Button>
+								</div>
+							</Card>
+						</motion.section>
+					)}
+				</AnimatePresence>
+
+				<AnimatePresence mode="wait">
+					{ui === "result" && (
+						<motion.section {...section}>
+							<Card className="p-6">
+								<h3 className="text-base font-semibold font-display">Draft</h3>
+								<div className="mt-3 whitespace-pre-wrap rounded-md border border-border p-4 text-sm min-h-[200px]" aria-live="polite">
+									{status === "running" ? <LoaderDots label="Generating" /> : (result?.text || "Your draft will appear here.")}
+								</div>
+								<div className="mt-6 flex flex-wrap gap-3">
+									<Button variant="outline" onClick={() => setUi("compose")}>
+										<RefreshCw className="h-4 w-4 mr-2" />
+										Regenerate
+									</Button>
+									<Button
+										variant="secondary"
+										onClick={() => {
+											navigator.clipboard.writeText(result?.text || "");
+											toast.success("Copied to clipboard");
+										}}
+									>
+										<Copy className="h-4 w-4 mr-2" />
+										Copy
+									</Button>
+									<Button>
+										<Send className="h-4 w-4 mr-2" />
+										Send via Gmail
+									</Button>
+								</div>
+							</Card>
+						</motion.section>
+					)}
+				</AnimatePresence>
 			</div>
 		</div>
 	);
