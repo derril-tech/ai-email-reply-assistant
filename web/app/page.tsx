@@ -19,12 +19,18 @@ export default function Page() {
 					</p>
 					<div className="mt-6 flex gap-3 justify-center">
 						<Link href="/playground">
-							<Button size="lg" className="shadow-soft">
+							<Button 
+								size="lg" 
+								className="bg-[#06D6A0] hover:bg-[#05c290] text-white shadow-soft font-semibold"
+							>
 								Connect Gmail
 							</Button>
 						</Link>
 						<Link href="/playground">
-							<Button variant="outline" size="lg" className="bg-background/80 backdrop-blur-sm">
+							<Button 
+								size="lg" 
+								className="bg-[#EF476F] hover:bg-[#e63764] text-white shadow-soft font-semibold"
+							>
 								See Playground
 							</Button>
 						</Link>
