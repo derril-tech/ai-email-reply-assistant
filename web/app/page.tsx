@@ -21,7 +21,7 @@ export default function Page() {
 						<Link href="/playground">
 							<Button 
 								size="lg" 
-								className="bg-[#06D6A0] hover:bg-[#05c290] text-white shadow-soft font-semibold"
+								className="bg-[#05c290] hover:bg-[#04ab7e] text-white shadow-soft font-semibold"
 							>
 								Connect Gmail
 							</Button>
@@ -29,7 +29,7 @@ export default function Page() {
 						<Link href="/playground">
 							<Button 
 								size="lg" 
-								className="bg-[#EF476F] hover:bg-[#e63764] text-white shadow-soft font-semibold"
+								className="bg-[#e63764] hover:bg-[#d32d58] text-white shadow-soft font-semibold"
 							>
 								See Playground
 							</Button>
