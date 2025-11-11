@@ -6,23 +6,29 @@ export default function Page() {
 	return (
 		<main className="space-y-10">
 			<HeroVideo>
-				<h1 className="text-4xl md:text-6xl font-semibold tracking-tight font-display text-foreground">
-					Reply smarter. <span className="text-primary">Faster.</span> Politer.
-				</h1>
-				<p className="mt-4 max-w-2xl text-muted-foreground leading-relaxed">
-					Draft contextual replies from Gmail threads with one click.
-				</p>
-				<div className="mt-6 flex gap-3">
-					<Link href="/playground">
-						<Button size="lg" className="shadow-soft">
-							Connect Gmail
-						</Button>
-					</Link>
-					<Link href="/playground">
-						<Button variant="outline" size="lg">
-							See Playground
-						</Button>
-					</Link>
+				{/* Text container with subtle backdrop for better readability */}
+				<div className="relative">
+					{/* Subtle backdrop blur for text separation */}
+					<div className="absolute inset-0 bg-background/20 backdrop-blur-sm rounded-3xl -z-10 scale-110"></div>
+					
+					<h1 className="text-4xl md:text-6xl font-semibold tracking-tight font-display text-foreground drop-shadow-lg">
+						Reply smarter. <span className="text-white">Faster.</span> Politer.
+					</h1>
+					<p className="mt-4 max-w-2xl text-foreground/90 leading-relaxed drop-shadow-md">
+						Draft contextual replies from Gmail threads with one click.
+					</p>
+					<div className="mt-6 flex gap-3 justify-center">
+						<Link href="/playground">
+							<Button size="lg" className="shadow-soft">
+								Connect Gmail
+							</Button>
+						</Link>
+						<Link href="/playground">
+							<Button variant="outline" size="lg" className="bg-background/80 backdrop-blur-sm">
+								See Playground
+							</Button>
+						</Link>
+					</div>
 				</div>
 			</HeroVideo>
 

@@ -91,6 +91,11 @@ html, body {
 	@apply bg-white/75 dark:bg-black/40 backdrop-blur-xl shadow-glass;
 }
 
+/* Radial gradient for hero text backdrop */
+.bg-radial-gradient {
+	background: radial-gradient(circle at center, var(--tw-gradient-stops));
+}
+
 /* Global focus-visible styles for accessibility */
 *:focus-visible {
 	@apply outline-2 outline-ring outline-offset-2;

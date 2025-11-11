@@ -15,7 +15,12 @@ export default function HeroVideo({ children }: { children?: ReactNode }) {
 				playsInline
 				aria-label="Floating abstract background"
 			/>
-			<div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/40 to-background/10"></div>
+			{/* Enhanced gradient overlay for better text contrast */}
+			<div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/60 to-background/30"></div>
+			
+			{/* Additional center vignette for text clarity */}
+			<div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-background/40"></div>
+			
 			<motion.div
 				initial={{ opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
