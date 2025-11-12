@@ -15,46 +15,48 @@
 - [x] Description text is centered
 - [x] "Connect Gmail" button navigates to `/playground`
 - [x] "See Playground" button navigates to `/playground`
-- [x] "How It Works" section displays 3 step cards
+- [x] "How It Works" section displays 3 step cards (Connect Gmail, Select Thread, Generate Reply)
 - [x] Footer shows "Created by Derril Filemon"
-- [x] Footer social links work (Email, GitHub, LinkedIn)
+- [x] Footer social links present (cashcrumbs@gmail.com, GitHub, LinkedIn)
 - [x] Mobile bottom nav displays (Home, Playground, Dashboard)
 
-**Status:** ✅ PASS
+**Status:** ✅ PASS — Verified live 2025-11-12
 
 ---
 
 ### ✅ Journey 2: Dashboard Overview
-- [ ] Navigate to `/dashboard`
-- [ ] 4 stat cards display (Total Drafts, Saved Time, Avg Response, Success Rate)
-- [ ] Stat icons display with brand colors
-- [ ] "Recent Drafts" section displays
-- [ ] "Quick Actions" section displays
-- [ ] Hover effects work on cards
-- [ ] Layout is responsive on mobile
+- [x] Navigate to `/dashboard`
+- [x] Page loads successfully (200 OK)
+- [ ] 4 stat cards display (Total Drafts, Saved Time, Avg Response, Success Rate) — *needs visual verification*
+- [ ] Stat icons display with brand colors — *needs visual verification*
+- [ ] "Recent Drafts" section displays — *needs visual verification*
+- [ ] "Quick Actions" section displays — *needs visual verification*
+- [ ] Hover effects work on cards — *needs manual test*
+- [ ] Layout is responsive on mobile — *needs manual test*
 
-**Status:** 📋 TODO — Manual test required
+**Status:** ⚠️ PARTIAL — Page loads, needs visual/interaction verification
 
 ---
 
 ### ⚠️ Journey 3: Playground — Generate Email Draft
-- [ ] Navigate to `/playground`
-- [ ] Click "Select a Thread" button
-- [ ] Thread picker displays
-- [ ] Select a mock thread
-- [ ] Compose view displays with controls:
+- [x] Navigate to `/playground`
+- [x] Page loads successfully (200 OK)
+- [ ] Click "Select a Thread" button — *needs manual test*
+- [ ] Thread picker displays — *needs manual test*
+- [ ] Select a mock thread — *needs manual test*
+- [ ] Compose view displays with controls: — *needs manual test*
   - [ ] Tone slider (default: friendly)
   - [ ] Length slider (default: 120 words)
   - [ ] Bullet points toggle
-- [ ] Click "Generate Draft"
-- [ ] Loading animation displays
-- [ ] Draft result displays
-- [ ] "Copy to Clipboard" works with toast notification
-- [ ] "Send with Gmail" button displays (stubbed)
-- [ ] "Start Over" returns to hero view
-- [ ] History sidebar displays recent drafts
+- [ ] Click "Generate Draft" — *needs manual test*
+- [ ] Loading animation displays — *needs manual test*
+- [ ] Draft result displays — *needs manual test*
+- [ ] "Copy to Clipboard" works with toast notification — *needs manual test*
+- [ ] "Send with Gmail" button displays (stubbed) — *needs manual test*
+- [ ] "Start Over" returns to hero view — *needs manual test*
+- [ ] History sidebar displays recent drafts — *needs manual test*
 
-**Status:** ⚠️ PARTIAL — API integration working, Gmail OAuth not yet wired
+**Status:** ⚠️ PARTIAL — Page accessible, full flow requires API URL config + manual test
 
 ---
 
