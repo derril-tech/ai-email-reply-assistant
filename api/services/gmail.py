@@ -23,12 +23,17 @@ try:
 except ImportError:
 	SUPABASE_AVAILABLE = False
 
-# Fallback REST helper (bypass client schema issues)
+# Fallback REST helper (bypass client schema issues). Try multiple import styles.
+_SUPA_REST_AVAILABLE = False
 try:
-	from . import supabase_rest
+	from api.services import supabase_rest  # type: ignore
 	_SUPA_REST_AVAILABLE = True
 except Exception:
-	_SUPA_REST_AVAILABLE = False
+	try:
+		from services import supabase_rest  # type: ignore
+		_SUPA_REST_AVAILABLE = True
+	except Exception:
+		_SUPA_REST_AVAILABLE = False
 
 
 def get_supabase_client() -> Optional[Client]:

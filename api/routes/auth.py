@@ -162,7 +162,10 @@ async def oauth_callback(
 		
 		# Store tokens in Supabase - force schema-qualified REST upsert
 		try:
-			from ..services import supabase_rest
+			try:
+				from api.services import supabase_rest  # type: ignore
+			except Exception:
+				from services import supabase_rest  # type: ignore
 			token_record = {
 				"profile_id": project_id,  # TODO: Replace with real user ID from Supabase auth
 				"project_id": project_id,
@@ -206,7 +209,10 @@ def auth_status(project_id: str = Query(default="default")):
 	"""
 	try:
 		# Check if tokens exist for this project via REST (schema-qualified)
-		from ..services import supabase_rest
+		try:
+			from api.services import supabase_rest  # type: ignore
+		except Exception:
+			from services import supabase_rest  # type: ignore
 		token = supabase_rest.select_oauth_token(project_id=project_id, provider="google")
 		if token:
 			# Check if token is expired

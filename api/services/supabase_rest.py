@@ -22,7 +22,8 @@ def _get_base_headers() -> Dict[str, str]:
 
 def select_oauth_token(project_id: str, provider: str = "google") -> Optional[Dict[str, Any]]:
 	cfg = _get_base_headers()
-	url = f"{cfg['base_url']}/rest/v1/emailreply.oauth_tokens"
+	# Use table path without schema; select schema via Accept-Profile
+	url = f"{cfg['base_url']}/rest/v1/oauth_tokens"
 	headers = {
 		"apikey": cfg["apikey"],
 		"Authorization": f"Bearer {cfg['apikey']}",
@@ -43,7 +44,8 @@ def select_oauth_token(project_id: str, provider: str = "google") -> Optional[Di
 
 def upsert_oauth_token(record: Dict[str, Any]) -> Dict[str, Any]:
 	cfg = _get_base_headers()
-	url = f"{cfg['base_url']}/rest/v1/emailreply.oauth_tokens"
+	# Use table path without schema; write schema via Content-Profile
+	url = f"{cfg['base_url']}/rest/v1/oauth_tokens"
 	headers = {
 		"apikey": cfg["apikey"],
 		"Authorization": f"Bearer {cfg['apikey']}",
