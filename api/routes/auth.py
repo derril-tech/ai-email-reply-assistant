@@ -160,35 +160,23 @@ async def oauth_callback(
 		if credentials.expiry:
 			expires_at = credentials.expiry.isoformat()
 		
-		# Store tokens in Supabase
-		supabase = get_supabase_client()
-		schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
-		
-		if supabase:
-			try:
-				# For now, use project_id as profile_id (in production, use real user ID from auth)
-				token_record = {
-					"profile_id": project_id,  # TODO: Replace with real user ID from Supabase auth
-					"project_id": project_id,
-					"provider": "google",
-					"access_token": credentials.token,
-					"refresh_token": credentials.refresh_token,
-					"expires_at": expires_at,
-					"scopes": ",".join(credentials.scopes) if credentials.scopes else "",
-				}
-				
-				# Upsert token (insert or update if exists)
-				print(f"💾 Storing tokens in oauth_tokens table...")
-				result = supabase.table("oauth_tokens").upsert(
-					token_record,
-					on_conflict="profile_id,project_id,provider"
-				).execute()
-				
-				print(f"✅ OAuth tokens stored in Supabase for project: {project_id}")
-			except Exception as e:
-				print(f"⚠️ Failed to store tokens in Supabase: {e}")
-		else:
-			print("⚠️ Supabase not available, tokens not persisted")
+		# Store tokens in Supabase - force schema-qualified REST upsert
+		try:
+			from ..services import supabase_rest
+			token_record = {
+				"profile_id": project_id,  # TODO: Replace with real user ID from Supabase auth
+				"project_id": project_id,
+				"provider": "google",
+				"access_token": credentials.token,
+				"refresh_token": credentials.refresh_token,
+				"expires_at": expires_at,
+				"scopes": ",".join(credentials.scopes) if credentials.scopes else "",
+			}
+			print("💾 Storing token via REST to emailreply.oauth_tokens ...")
+			_ = supabase_rest.upsert_oauth_token(token_record)
+			print(f"✅ OAuth tokens stored in Supabase for project: {project_id}")
+		except Exception as e:
+			print(f"⚠️ Failed to store tokens in Supabase via REST: {e}")
 		
 		print(f"OAuth success for project: {project_id}")
 		print(f"Scopes granted: {credentials.scopes}")
@@ -216,23 +204,11 @@ def auth_status(project_id: str = Query(default="default")):
 	"""
 	Check if user has connected Gmail for a project.
 	"""
-	supabase = get_supabase_client()
-	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
-	
-	if not supabase:
-		return {"connected": False, "error": "Supabase not available"}
-	
 	try:
-		# Check if tokens exist for this project
-		result = supabase.table("oauth_tokens").select("*").eq(
-			"project_id", project_id
-		).eq(
-			"provider", "google"
-		).execute()
-		
-		if result.data and len(result.data) > 0:
-			token = result.data[0]
-			
+		# Check if tokens exist for this project via REST (schema-qualified)
+		from ..services import supabase_rest
+		token = supabase_rest.select_oauth_token(project_id=project_id, provider="google")
+		if token:
 			# Check if token is expired
 			if token.get("expires_at"):
 				from datetime import datetime
@@ -254,6 +230,6 @@ def auth_status(project_id: str = Query(default="default")):
 		return {"connected": False}
 		
 	except Exception as e:
-		print(f"Error checking auth status: {e}")
+		print(f"Error checking auth status (REST): {e}")
 		return {"connected": False, "error": str(e)}
 

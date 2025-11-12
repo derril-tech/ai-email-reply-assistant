@@ -23,6 +23,13 @@ try:
 except ImportError:
 	SUPABASE_AVAILABLE = False
 
+# Fallback REST helper (bypass client schema issues)
+try:
+	from . import supabase_rest
+	_SUPA_REST_AVAILABLE = True
+except Exception:
+	_SUPA_REST_AVAILABLE = False
+
 
 def get_supabase_client() -> Optional[Client]:
 	"""Get Supabase client if available and configured for emailreply schema."""
@@ -63,52 +70,47 @@ def resolve_oauth_token(project_id: str) -> str | None:
 	"""
 	print(f"🔑 resolve_oauth_token called for project: {project_id}")
 	
-	supabase = get_supabase_client()
-	if not supabase:
-		print("❌ Supabase not available for token lookup")
-		return None
-	
-	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
-	
-	try:
-		# Fetch token from oauth_tokens table
-		# Schema is set via postgrest.schema() in get_supabase_client()
-		print(f"🔍 Querying oauth_tokens table...")
-		
-		result = supabase.table("oauth_tokens").select("*").eq(
-			"project_id", project_id
-		).eq(
-			"provider", "google"
-		).execute()
-		
-		print(f"📊 Supabase query result: {len(result.data) if result.data else 0} rows")
-		
-		if result.data and len(result.data) > 0:
-			token = result.data[0]
+	# Prefer REST helper to force schema-qualified access
+	if _SUPA_REST_AVAILABLE:
+		try:
+			print("🌐 Using Supabase REST to query emailreply.oauth_tokens ...")
+			token = supabase_rest.select_oauth_token(project_id=project_id, provider="google")
+			if not token:
+				print(f"❌ No token found for project {project_id}")
+				return None
+
 			print(f"✅ Token found, created: {token.get('created_at')}")
-			
+
 			# Check if expired
 			if token.get("expires_at"):
 				expires_at = datetime.fromisoformat(token["expires_at"])
 				now = datetime.utcnow()
 				print(f"⏰ Token expires: {expires_at}, Now: {now}")
-				
 				if now >= expires_at:
 					print(f"❌ Token expired for project {project_id}")
-					# TODO: Implement token refresh
 					return None
-				else:
-					print(f"✅ Token still valid ({(expires_at - now).total_seconds() / 3600:.1f} hours remaining)")
-			
+				print(f"✅ Token still valid ({(expires_at - now).total_seconds() / 3600:.1f} hours remaining)")
+
 			return token.get("access_token")
-		
+		except Exception as e:
+			print(f"❌ REST token query failed: {e}")
+
+	# Fallback to client (may fail if schema not exposed)
+	supabase = get_supabase_client()
+	if not supabase:
+		print("❌ Supabase not available for token lookup")
+		return None
+
+	try:
+		print("🔍 Querying oauth_tokens via supabase client ...")
+		result = supabase.table("oauth_tokens").select("*").eq("project_id", project_id).eq("provider", "google").execute()
+		if result.data and len(result.data) > 0:
+			token = result.data[0]
+			return token.get("access_token")
 		print(f"❌ No token found for project {project_id}")
 		return None
-		
 	except Exception as e:
-		print(f"❌ Error resolving OAuth token: {e}")
-		import traceback
-		traceback.print_exc()
+		print(f"❌ Error resolving OAuth token (client): {e}")
 		return None
 
 
