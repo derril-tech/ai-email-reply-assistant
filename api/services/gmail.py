@@ -63,10 +63,14 @@ def resolve_oauth_token(project_id: str) -> str | None:
 		print("❌ Supabase not available for token lookup")
 		return None
 	
+	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
+	
 	try:
-		# Fetch token from oauth_tokens table
-		print(f"🔍 Querying Supabase oauth_tokens table...")
-		result = supabase.table("oauth_tokens").select("*").eq(
+		# Fetch token from oauth_tokens table with explicit schema
+		print(f"🔍 Querying oauth_tokens in schema: {schema}...")
+		
+		# Query with explicit schema.table format
+		result = supabase.from_(f"{schema}.oauth_tokens").select("*").eq(
 			"project_id", project_id
 		).eq(
 			"provider", "google"

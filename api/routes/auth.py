@@ -159,6 +159,8 @@ async def oauth_callback(
 		
 		# Store tokens in Supabase
 		supabase = get_supabase_client()
+		schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
+		
 		if supabase:
 			try:
 				# For now, use project_id as profile_id (in production, use real user ID from auth)
@@ -172,8 +174,9 @@ async def oauth_callback(
 					"scopes": ",".join(credentials.scopes) if credentials.scopes else "",
 				}
 				
-				# Upsert token (insert or update if exists)
-				result = supabase.table("oauth_tokens").upsert(
+				# Upsert token with explicit schema.table format
+				print(f"💾 Storing tokens in {schema}.oauth_tokens...")
+				result = supabase.from_(f"{schema}.oauth_tokens").upsert(
 					token_record,
 					on_conflict="profile_id,project_id,provider"
 				).execute()
@@ -211,12 +214,14 @@ def auth_status(project_id: str = Query(default="default")):
 	Check if user has connected Gmail for a project.
 	"""
 	supabase = get_supabase_client()
+	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
+	
 	if not supabase:
 		return {"connected": False, "error": "Supabase not available"}
 	
 	try:
-		# Check if tokens exist for this project
-		result = supabase.table("oauth_tokens").select("*").eq(
+		# Check if tokens exist for this project with explicit schema
+		result = supabase.from_(f"{schema}.oauth_tokens").select("*").eq(
 			"project_id", project_id
 		).eq(
 			"provider", "google"
