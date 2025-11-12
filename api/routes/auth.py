@@ -39,7 +39,8 @@ def get_supabase_client() -> Optional[Client]:
 	if not SUPABASE_AVAILABLE:
 		return None
 	
-	url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+	# Prefer NEXT_PUBLIC_SUPABASE_URL, but fall back to SUPABASE_URL for server-side
+	url = os.getenv("NEXT_PUBLIC_SUPABASE_URL") or os.getenv("SUPABASE_URL")
 	key = os.getenv("SUPABASE_SERVICE_ROLE")
 	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
 	
