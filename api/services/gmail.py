@@ -25,7 +25,7 @@ except ImportError:
 
 
 def get_supabase_client() -> Optional[Client]:
-	"""Get Supabase client if available."""
+	"""Get Supabase client if available and configured for emailreply schema."""
 	if not SUPABASE_AVAILABLE:
 		return None
 	
@@ -34,12 +34,14 @@ def get_supabase_client() -> Optional[Client]:
 	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
 	
 	if not url or not key:
-		print("Warning: Supabase credentials not configured")
+		print("⚠️ Warning: Supabase credentials not configured")
 		return None
+	
+	print(f"✅ Supabase client created with schema: {schema}")
 	
 	# Create client with custom schema
 	client = create_client(url, key)
-	# Set the schema for all requests
+	# Set the schema for all requests - CRITICAL FIX for emailreply schema
 	client.schema(schema)
 	return client
 
