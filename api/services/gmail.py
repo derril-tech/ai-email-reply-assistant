@@ -19,7 +19,6 @@ except ImportError:
 
 try:
 	from supabase import create_client, Client
-	from supabase.client_options import ClientOptions
 	SUPABASE_AVAILABLE = True
 except ImportError:
 	SUPABASE_AVAILABLE = False
@@ -41,8 +40,13 @@ def get_supabase_client() -> Optional[Client]:
 	
 	print(f"✅ Supabase client created with schema: {schema}")
 	
-	# Create client with explicit ClientOptions (correct way in supabase-py v2)
-	client = create_client(url, key, options=ClientOptions(schema=schema))
+	# Create client and set schema if supported
+	client = create_client(url, key)
+	try:
+		# Some supabase-py versions expose postgrest.schema to set the search path
+		client.postgrest.schema(schema)  # type: ignore[attr-defined]
+	except Exception:
+		pass
 	
 	return client
 
