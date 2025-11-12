@@ -39,12 +39,16 @@ def get_supabase_client() -> Optional[Client]:
 	
 	print(f"✅ Supabase client created with schema: {schema}")
 	
-	# Create client
-	client = create_client(url, key)
+	# Create client with schema header
+	options = {
+		"schema": schema,
+		"headers": {
+			"Accept-Profile": schema,
+			"Content-Profile": schema,
+		}
+	}
 	
-	# Set schema in PostgREST headers (tells the API which schema to use)
-	# This sets the search_path for all queries
-	client.postgrest.schema(schema)
+	client = create_client(url, key, options=options)
 	
 	return client
 

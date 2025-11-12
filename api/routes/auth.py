@@ -46,10 +46,17 @@ def get_supabase_client() -> Optional[Client]:
 		print("Warning: Supabase credentials not configured")
 		return None
 	
-	# Create client with custom schema
-	client = create_client(url, key)
-	# Set the schema for all requests via PostgREST
-	client.postgrest.schema(schema)
+	# Create client with schema header
+	options = {
+		"schema": schema,
+		"headers": {
+			"Accept-Profile": schema,
+			"Content-Profile": schema,
+		}
+	}
+	
+	client = create_client(url, key, options=options)
+	
 	return client
 
 
