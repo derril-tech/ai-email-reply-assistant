@@ -3,9 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os, uuid, time, json
 
-from adapters.openai_email_reply import draft_reply
-from services.gmail import resolve_oauth_token, fetch_thread_text
-from services.persistence import write_job_to_redis, persist_message_to_supabase
+from api.adapters import openai_email_reply
+from api.services import gmail, persistence
 
 APP_NAME = "emailreply"
 PREFIX = os.getenv("REDIS_PREFIX", APP_NAME)
@@ -52,12 +51,12 @@ def run_agent(body: RunBody):
     JOBS[job_id] = {"status": "queued", "result": None, "started_at": time.time()}
 
     # Resolve Gmail token and fetch thread (stubbed)
-    access_token = resolve_oauth_token(body.projectId)
-    thread_text = fetch_thread_text(body.meta["threadId"], access_token)
+    access_token = gmail.resolve_oauth_token(body.projectId)
+    thread_text = gmail.fetch_thread_text(body.meta["threadId"], access_token)
 
     # Generate draft via adapter
     controls = dict(body.meta or {})
-    draft = draft_reply(thread_text=thread_text, controls=controls)
+    draft = openai_email_reply.draft_reply(thread_text=thread_text, controls=controls)
 
     result_payload = {
         "text": draft.get("text", ""),
@@ -73,8 +72,8 @@ def run_agent(body: RunBody):
     }
 
     # Best-effort persistence (stubbed / optional)
-    persist_message_to_supabase(body.projectId, result_payload)
-    write_job_to_redis(job_id, {"status": "done", "result": result_payload})
+    persistence.persist_message_to_supabase(body.projectId, result_payload)
+    persistence.write_job_to_redis(job_id, {"status": "done", "result": result_payload})
 
     JOBS[job_id] = {"status": "done", "result": result_payload, "started_at": time.time()}
     return {"jobId": job_id}
