@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAgent } from "../../hooks/useAgent";
 import { useGmailAuth } from "../../hooks/useGmailAuth";
@@ -23,7 +23,7 @@ type DraftHistory = {
 	createdAt: string;
 };
 
-export default function PlaygroundPage() {
+function PlaygroundContent() {
 	const searchParams = useSearchParams();
 	const [ui, setUi] = useState<UIState>("hero");
 	const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -322,4 +322,10 @@ export default function PlaygroundPage() {
 	);
 }
 
-
+export default function PlaygroundPage() {
+	return (
+		<Suspense fallback={<LoaderDots label="Loading playground..." />}>
+			<PlaygroundContent />
+		</Suspense>
+	);
+}
