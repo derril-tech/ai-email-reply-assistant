@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os, uuid, time, json
 
-from api.adapters import openai_email_reply
-from api.services import gmail, persistence
+# Support both local package imports (repo root) and Railway service root ("api" as app root)
+try:
+	from api.adapters import openai_email_reply
+	from api.services import gmail, persistence
+except ModuleNotFoundError:  # Running with cwd at api/ (e.g., Railway root=api)
+	from adapters import openai_email_reply
+	from services import gmail, persistence
 
 APP_NAME = "emailreply"
 PREFIX = os.getenv("REDIS_PREFIX", APP_NAME)
