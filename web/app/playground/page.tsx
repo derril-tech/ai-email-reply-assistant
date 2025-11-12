@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAgent } from "../../hooks/useAgent";
+import { useGmailAuth } from "../../hooks/useGmailAuth";
 import LoaderDots from "../../components/LoaderDots";
 import EmptyState from "../../components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, Copy, Send, RefreshCw } from "lucide-react";
+import { History, X, Copy, Send, RefreshCw, Mail } from "lucide-react";
 
 type UIState = "hero" | "threadPicker" | "compose" | "result";
 
@@ -22,6 +24,7 @@ type DraftHistory = {
 };
 
 export default function PlaygroundPage() {
+	const searchParams = useSearchParams();
 	const [ui, setUi] = useState<UIState>("hero");
 	const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 	const [tone, setTone] = useState<"friendly" | "formal" | "brief">("friendly");
@@ -30,11 +33,23 @@ export default function PlaygroundPage() {
 	const [showHistory, setShowHistory] = useState<boolean>(false);
 	const [history, setHistory] = useState<DraftHistory[]>([]);
 	const { run, status, result } = useAgent("default");
+	const { isAuthorized, loading: authLoading, connectGmail } = useGmailAuth("default");
 
+	// Mock threads (will be replaced with real Gmail threads)
 	const threads = [
 		{ id: "t1", subject: "Q3 Planning", snippet: "Let's align on the next steps..." },
 		{ id: "t2", subject: "Invoice #3421", snippet: "Please find attached the invoice..." },
 	];
+
+	// Check for OAuth success in URL
+	useEffect(() => {
+		const connected = searchParams?.get("connected");
+		if (connected === "true") {
+			toast.success("Gmail connected successfully!");
+			// Optionally navigate to thread picker
+			setUi("threadPicker");
+		}
+	}, [searchParams]);
 
 	useEffect(() => {
 		if (status === "done") {
@@ -124,12 +139,33 @@ export default function PlaygroundPage() {
 					{ui === "hero" && (
 						<motion.section {...section}>
 							<Card className="p-12 text-center">
-								<h1 className="text-3xl md:text-4xl font-semibold font-display">AI Email Reply Playground</h1>
-								<p className="mt-3 text-base text-muted-foreground">Connect Gmail to get started.</p>
-								<div className="mt-8">
-									<Button size="lg" onClick={() => setUi("threadPicker")}>
-										Connect Gmail
-									</Button>
+								<div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+									<Mail className="h-8 w-8 text-primary" />
+								</div>
+								<h1 className="text-3xl md:text-4xl font-semibold font-display">
+									Draft Your Next Reply
+								</h1>
+								<p className="mt-3 text-base text-muted-foreground max-w-md mx-auto">
+									{isAuthorized 
+										? "Select a Gmail thread to start generating AI-powered replies."
+										: "Connect your Gmail account to fetch threads and generate AI-powered replies."
+									}
+								</p>
+								<div className="mt-8 flex gap-3 justify-center">
+									{isAuthorized ? (
+										<Button size="lg" onClick={() => setUi("threadPicker")}>
+											Select a Thread
+										</Button>
+									) : (
+										<Button 
+											size="lg" 
+											onClick={connectGmail}
+											disabled={authLoading}
+											className="bg-[#05c290] hover:bg-[#04ab7e]"
+										>
+											{authLoading ? "Connecting..." : "Connect Gmail"}
+										</Button>
+									)}
 								</div>
 							</Card>
 						</motion.section>
