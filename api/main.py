@@ -7,14 +7,19 @@ import os, uuid, time, json
 try:
 	from api.adapters import openai_email_reply
 	from api.services import gmail, persistence
+	from api.routes import auth
 except ModuleNotFoundError:  # Running with cwd at api/ (e.g., Railway root=api)
 	from adapters import openai_email_reply
 	from services import gmail, persistence
+	from routes import auth
 
 APP_NAME = "emailreply"
 PREFIX = os.getenv("REDIS_PREFIX", APP_NAME)
 
 app = FastAPI(title="AI Email Reply Assistant API")
+
+# Include OAuth auth router
+app.include_router(auth.router)
 
 # CORS (Railway domain + local dev)
 railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
