@@ -140,11 +140,16 @@ async def oauth_callback(
 		print(f"Scopes granted: {credentials.scopes}")
 		
 		# Redirect back to web app
-		web_url = os.getenv("WEB_RAILWAY_URL") or os.getenv("NEXT_PUBLIC_APP_URL") or "http://localhost:3000"
-		if not web_url.startswith("http"):
-			web_url = f"https://{web_url}"
+		# Priority: redirect_to from state > WEB_RAILWAY_URL > fallback
+		if redirect_to:
+			final_redirect = redirect_to
+		else:
+			web_url = os.getenv("WEB_RAILWAY_URL") or "https://web-production-5e03f.up.railway.app"
+			if not web_url.startswith("http"):
+				web_url = f"https://{web_url}"
+			final_redirect = f"{web_url}/playground?connected=true"
 		
-		final_redirect = redirect_to or f"{web_url}/playground?connected=true"
+		print(f"Redirecting to: {final_redirect}")
 		return RedirectResponse(url=final_redirect)
 		
 	except Exception as e:
