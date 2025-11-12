@@ -22,39 +22,69 @@ def _get_base_headers() -> Dict[str, str]:
 
 def select_oauth_token(project_id: str, provider: str = "google") -> Optional[Dict[str, Any]]:
 	cfg = _get_base_headers()
-	# Use table path without schema; select schema via Accept-Profile
-	url = f"{cfg['base_url']}/rest/v1/oauth_tokens"
-	headers = {
-		"apikey": cfg["apikey"],
-		"Authorization": f"Bearer {cfg['apikey']}",
-		"Accept": "application/json",
-		"Accept-Profile": "emailreply",
-	}
 	params = {
 		"select": "*",
 		"project_id": f"eq.{project_id}",
 		"provider": f"eq.{provider}",
 		"limit": "1",
 	}
-	resp = requests.get(url, headers=headers, params=params, timeout=10)
-	resp.raise_for_status()
-	items = resp.json()
-	return items[0] if isinstance(items, list) and items else None
+	# Strategy 1: default path + Accept-Profile
+	url_1 = f"{cfg['base_url']}/rest/v1/oauth_tokens"
+	headers_1 = {
+		"apikey": cfg["apikey"],
+		"Authorization": f"Bearer {cfg['apikey']}",
+		"Accept": "application/json",
+		"Accept-Profile": "emailreply",
+	}
+	try:
+		resp = requests.get(url_1, headers=headers_1, params=params, timeout=10)
+		if resp.status_code >= 400:
+			raise requests.HTTPError(f"{resp.status_code} {resp.reason}: {resp.text}", response=resp)
+		items = resp.json()
+		return items[0] if isinstance(items, list) and items else None
+	except Exception as e:
+		# Strategy 2: schema-qualified path (for older PostgREST)
+		url_2 = f"{cfg['base_url']}/rest/v1/emailreply.oauth_tokens"
+		headers_2 = {
+			"apikey": cfg["apikey"],
+			"Authorization": f"Bearer {cfg['apikey']}",
+			"Accept": "application/json",
+		}
+		resp2 = requests.get(url_2, headers=headers_2, params=params, timeout=10)
+		if resp2.status_code >= 400:
+			raise requests.HTTPError(f"{resp2.status_code} {resp2.reason}: {resp2.text}", response=resp2)
+		items2 = resp2.json()
+		return items2[0] if isinstance(items2, list) and items2 else None
 
 
 def upsert_oauth_token(record: Dict[str, Any]) -> Dict[str, Any]:
 	cfg = _get_base_headers()
-	# Use table path without schema; write schema via Content-Profile
-	url = f"{cfg['base_url']}/rest/v1/oauth_tokens"
-	headers = {
+	body = [record]
+	# Strategy 1: default path + Content-Profile
+	url_1 = f"{cfg['base_url']}/rest/v1/oauth_tokens"
+	headers_1 = {
 		"apikey": cfg["apikey"],
 		"Authorization": f"Bearer {cfg['apikey']}",
 		"Content-Type": "application/json",
 		"Prefer": "resolution=merge-duplicates,return=representation",
 		"Content-Profile": "emailreply",
 	}
-	resp = requests.post(url, headers=headers, json=[record], timeout=10)
-	resp.raise_for_status()
+	resp = requests.post(url_1, headers=headers_1, json=body, timeout=10)
+	if resp.status_code >= 400:
+		# Strategy 2: schema-qualified path (older PostgREST)
+		url_2 = f"{cfg['base_url']}/rest/v1/emailreply.oauth_tokens"
+		headers_2 = {
+			"apikey": cfg["apikey"],
+			"Authorization": f"Bearer {cfg['apikey']}",
+			"Content-Type": "application/json",
+			"Prefer": "resolution=merge-duplicates,return=representation",
+		}
+		resp2 = requests.post(url_2, headers=headers_2, json=body, timeout=10)
+		if resp2.status_code >= 400:
+			raise requests.HTTPError(f"{resp2.status_code} {resp2.reason}: {resp2.text}", response=resp2)
+		items2 = resp2.json()
+		return items2[0] if isinstance(items2, list) and items2 else record
+
 	items = resp.json()
 	return items[0] if isinstance(items, list) and items else record
 
