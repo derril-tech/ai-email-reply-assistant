@@ -40,12 +40,17 @@ def get_supabase_client() -> Optional[Client]:
 	
 	url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 	key = os.getenv("SUPABASE_SERVICE_ROLE")
+	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
 	
 	if not url or not key:
 		print("Warning: Supabase credentials not configured")
 		return None
 	
-	return create_client(url, key)
+	# Create client with custom schema
+	client = create_client(url, key)
+	# Set the schema for all requests
+	client.schema(schema)
+	return client
 
 
 @router.get("/google")
