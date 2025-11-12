@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import RedirectResponse
 import os
 from typing import Optional
+from datetime import datetime, timedelta
 
 # Try Google OAuth imports
 try:
@@ -15,6 +16,13 @@ try:
 except ImportError:
 	GOOGLE_AUTH_AVAILABLE = False
 
+# Try Supabase import
+try:
+	from supabase import create_client, Client
+	SUPABASE_AVAILABLE = True
+except ImportError:
+	SUPABASE_AVAILABLE = False
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # OAuth scopes
@@ -23,6 +31,21 @@ SCOPES = [
 	'https://www.googleapis.com/auth/gmail.send',
 	'https://www.googleapis.com/auth/gmail.metadata',
 ]
+
+
+def get_supabase_client() -> Optional[Client]:
+	"""Get Supabase client if available."""
+	if not SUPABASE_AVAILABLE:
+		return None
+	
+	url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+	key = os.getenv("SUPABASE_SERVICE_ROLE")
+	
+	if not url or not key:
+		print("Warning: Supabase credentials not configured")
+		return None
+	
+	return create_client(url, key)
 
 
 @router.get("/google")
@@ -124,18 +147,38 @@ async def oauth_callback(
 		flow.fetch_token(code=code)
 		credentials = flow.credentials
 		
-		# Store tokens (TODO: implement Supabase storage)
-		token_data = {
-			"access_token": credentials.token,
-			"refresh_token": credentials.refresh_token,
-			"token_uri": credentials.token_uri,
-			"client_id": credentials.client_id,
-			"client_secret": credentials.client_secret,
-			"scopes": credentials.scopes,
-		}
+		# Calculate expiry timestamp
+		expires_at = None
+		if credentials.expiry:
+			expires_at = credentials.expiry.isoformat()
 		
-		# TODO: Store in Supabase oauth_tokens table
-		# For now, log success
+		# Store tokens in Supabase
+		supabase = get_supabase_client()
+		if supabase:
+			try:
+				# For now, use project_id as profile_id (in production, use real user ID from auth)
+				token_record = {
+					"profile_id": project_id,  # TODO: Replace with real user ID from Supabase auth
+					"project_id": project_id,
+					"provider": "google",
+					"access_token": credentials.token,
+					"refresh_token": credentials.refresh_token,
+					"expires_at": expires_at,
+					"scopes": ",".join(credentials.scopes) if credentials.scopes else "",
+				}
+				
+				# Upsert token (insert or update if exists)
+				result = supabase.table("oauth_tokens").upsert(
+					token_record,
+					on_conflict="profile_id,project_id,provider"
+				).execute()
+				
+				print(f"✅ OAuth tokens stored in Supabase for project: {project_id}")
+			except Exception as e:
+				print(f"⚠️ Failed to store tokens in Supabase: {e}")
+		else:
+			print("⚠️ Supabase not available, tokens not persisted")
+		
 		print(f"OAuth success for project: {project_id}")
 		print(f"Scopes granted: {credentials.scopes}")
 		
@@ -162,10 +205,42 @@ def auth_status(project_id: str = Query(default="default")):
 	"""
 	Check if user has connected Gmail for a project.
 	"""
-	# TODO: Query Supabase to check if tokens exist
-	return {
-		"project_id": project_id,
-		"connected": False,  # Stubbed for now
-		"scopes": []
-	}
+	supabase = get_supabase_client()
+	if not supabase:
+		return {"connected": False, "error": "Supabase not available"}
+	
+	try:
+		# Check if tokens exist for this project
+		result = supabase.table("oauth_tokens").select("*").eq(
+			"project_id", project_id
+		).eq(
+			"provider", "google"
+		).execute()
+		
+		if result.data and len(result.data) > 0:
+			token = result.data[0]
+			
+			# Check if token is expired
+			if token.get("expires_at"):
+				from datetime import datetime
+				expires_at = datetime.fromisoformat(token["expires_at"])
+				is_expired = datetime.utcnow() >= expires_at
+				
+				return {
+					"connected": not is_expired,
+					"expired": is_expired,
+					"scopes": token.get("scopes", "").split(",") if token.get("scopes") else []
+				}
+			
+			# No expiry info, assume connected
+			return {
+				"connected": True,
+				"scopes": token.get("scopes", "").split(",") if token.get("scopes") else []
+			}
+		
+		return {"connected": False}
+		
+	except Exception as e:
+		print(f"Error checking auth status: {e}")
+		return {"connected": False, "error": str(e)}
 

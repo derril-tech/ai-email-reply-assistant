@@ -100,4 +100,18 @@ def get_messages(projectId: str = Query(...)):
     # TODO: fetch from Supabase table emailreply.messages
     return {"items": []}
 
+@app.get("/threads")
+def get_threads(projectId: str = Query(default="default"), maxResults: int = Query(default=20)):
+    """
+    Fetch Gmail threads for a project.
+    Returns list of threads with id, subject, snippet, date.
+    """
+    try:
+        threads = gmail.list_threads(projectId, max_results=maxResults)
+        return {"items": threads}
+    except Exception as e:
+        print(f"Error fetching threads: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch threads: {str(e)}")
+
+
 

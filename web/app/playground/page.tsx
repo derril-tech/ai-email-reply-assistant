@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAgent } from "../../hooks/useAgent";
 import { useGmailAuth } from "../../hooks/useGmailAuth";
+import { useThreads } from "../../hooks/useThreads";
 import LoaderDots from "../../components/LoaderDots";
 import EmptyState from "../../components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -34,18 +35,15 @@ function PlaygroundContent() {
 	const [history, setHistory] = useState<DraftHistory[]>([]);
 	const { run, status, result } = useAgent("default");
 	const { isAuthorized, loading: authLoading, connectGmail } = useGmailAuth("default");
-
-	// Mock threads (will be replaced with real Gmail threads)
-	const threads = [
-		{ id: "t1", subject: "Q3 Planning", snippet: "Let's align on the next steps..." },
-		{ id: "t2", subject: "Invoice #3421", snippet: "Please find attached the invoice..." },
-	];
+	const { threads, loading: threadsLoading, error: threadsError, refetch: refetchThreads } = useThreads("default");
 
 	// Check for OAuth success in URL
 	useEffect(() => {
 		const connected = searchParams?.get("connected");
 		if (connected === "true") {
 			toast.success("Gmail connected successfully!");
+			// Refetch threads after OAuth success
+			refetchThreads();
 			// Optionally navigate to thread picker
 			setUi("threadPicker");
 		}
@@ -178,13 +176,34 @@ function PlaygroundContent() {
 							<Card className="p-6">
 								<div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 									<h2 className="text-xl font-semibold font-display">Threads</h2>
-									<Input placeholder="Search threads..." className="md:w-64" />
+									<div className="flex gap-2 items-center">
+										<Input placeholder="Search threads..." className="md:w-64" />
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={refetchThreads}
+											disabled={threadsLoading}
+										>
+											<RefreshCw className={`h-4 w-4 ${threadsLoading ? 'animate-spin' : ''}`} />
+										</Button>
+									</div>
 								</div>
-								{threads.length === 0 ? (
+								
+								{threadsLoading ? (
+									<div className="py-8">
+										<LoaderDots label="Loading threads..." />
+									</div>
+								) : threadsError ? (
+									<EmptyState
+										icon="⚠️"
+										title="Failed to load threads"
+										description={threadsError}
+									/>
+								) : threads.length === 0 ? (
 									<EmptyState
 										icon="📭"
 										title="No threads found"
-										description="Connect your Gmail account to see your email threads here."
+										description="Your Gmail inbox appears to be empty, or you may need to reconnect your account."
 									/>
 								) : (
 									<ul className="divide-y divide-border">
@@ -205,11 +224,14 @@ function PlaygroundContent() {
 													}
 												}}
 											>
-												<div>
+												<div className="flex-1">
 													<div className="text-sm font-medium">{t.subject}</div>
-													<div className="text-xs text-muted-foreground">{t.snippet}</div>
+													<div className="text-xs text-muted-foreground mt-0.5">{t.from}</div>
+													<div className="text-xs text-muted-foreground mt-1">{t.snippet}</div>
 												</div>
-												<div className="text-xs text-muted-foreground">today</div>
+												<div className="text-xs text-muted-foreground whitespace-nowrap ml-4">
+													{new Date(t.date).toLocaleDateString()}
+												</div>
 											</motion.li>
 										))}
 									</ul>
