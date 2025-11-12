@@ -49,37 +49,50 @@ def resolve_oauth_token(project_id: str) -> str | None:
 	Returns:
 		Access token string or None if not found
 	"""
+	print(f"🔑 resolve_oauth_token called for project: {project_id}")
+	
 	supabase = get_supabase_client()
 	if not supabase:
-		print("Supabase not available for token lookup")
+		print("❌ Supabase not available for token lookup")
 		return None
 	
 	try:
 		# Fetch token from oauth_tokens table
+		print(f"🔍 Querying Supabase oauth_tokens table...")
 		result = supabase.table("oauth_tokens").select("*").eq(
 			"project_id", project_id
 		).eq(
 			"provider", "google"
 		).execute()
 		
+		print(f"📊 Supabase query result: {len(result.data) if result.data else 0} rows")
+		
 		if result.data and len(result.data) > 0:
 			token = result.data[0]
+			print(f"✅ Token found, created: {token.get('created_at')}")
 			
 			# Check if expired
 			if token.get("expires_at"):
 				expires_at = datetime.fromisoformat(token["expires_at"])
-				if datetime.utcnow() >= expires_at:
-					print(f"Token expired for project {project_id}")
+				now = datetime.utcnow()
+				print(f"⏰ Token expires: {expires_at}, Now: {now}")
+				
+				if now >= expires_at:
+					print(f"❌ Token expired for project {project_id}")
 					# TODO: Implement token refresh
 					return None
+				else:
+					print(f"✅ Token still valid ({(expires_at - now).total_seconds() / 3600:.1f} hours remaining)")
 			
 			return token.get("access_token")
 		
-		print(f"No token found for project {project_id}")
+		print(f"❌ No token found for project {project_id}")
 		return None
 		
 	except Exception as e:
-		print(f"Error resolving OAuth token: {e}")
+		print(f"❌ Error resolving OAuth token: {e}")
+		import traceback
+		traceback.print_exc()
 		return None
 
 
@@ -192,13 +205,17 @@ def list_threads(project_id: str, max_results: int = 20) -> List[Dict[str, Any]]
 	Returns:
 		List of thread dictionaries with id, subject, snippet, date
 	"""
+	print(f"🔍 list_threads called for project: {project_id}")
+	
 	access_token = resolve_oauth_token(project_id)
 	if not access_token:
-		print(f"No access token for project {project_id}")
+		print(f"❌ No access token for project {project_id}")
 		return []
 	
+	print(f"✅ Access token found (length: {len(access_token)})")
+	
 	if not GMAIL_API_AVAILABLE:
-		print("Gmail API library not available")
+		print("❌ Gmail API library not available")
 		return []
 	
 	try:
@@ -208,22 +225,31 @@ def list_threads(project_id: str, max_results: int = 20) -> List[Dict[str, Any]]
 		
 		# List threads
 		label_whitelist = os.getenv("GMAIL_LABEL_WHITELIST", "INBOX").split(",")
+		selected_label = label_whitelist[0].strip() if label_whitelist else 'INBOX'
+		
+		print(f"🏷️  Fetching threads from label: {selected_label}")
 		
 		# Fetch threads from first label
 		results = service.users().threads().list(
 			userId='me',
 			maxResults=max_results,
-			labelIds=[label_whitelist[0].strip()] if label_whitelist else ['INBOX']
+			labelIds=[selected_label]
 		).execute()
 		
+		print(f"📧 Gmail API response: {results.keys()}")
+		
 		threads_data = results.get('threads', [])
+		print(f"📬 Found {len(threads_data)} threads")
+		
 		if not threads_data:
+			print("⚠️  No threads returned from Gmail API")
 			return []
 		
 		# Fetch details for each thread
 		threads = []
-		for thread_data in threads_data:
+		for i, thread_data in enumerate(threads_data):
 			thread_id = thread_data['id']
+			print(f"📨 Fetching thread {i+1}/{len(threads_data)}: {thread_id}")
 			
 			# Fetch full thread to get subject and snippet
 			thread = service.users().threads().get(
@@ -236,6 +262,7 @@ def list_threads(project_id: str, max_results: int = 20) -> List[Dict[str, Any]]
 			# Extract first message headers
 			messages = thread.get('messages', [])
 			if not messages:
+				print(f"⚠️  No messages in thread {thread_id}")
 				continue
 			
 			first_msg = messages[0]
@@ -247,6 +274,8 @@ def list_threads(project_id: str, max_results: int = 20) -> List[Dict[str, Any]]
 			
 			snippet = thread.get('snippet', '')
 			
+			print(f"✉️  Thread: '{subject[:50]}' from {from_email[:30]}")
+			
 			threads.append({
 				'id': thread_id,
 				'subject': subject,
@@ -255,6 +284,7 @@ def list_threads(project_id: str, max_results: int = 20) -> List[Dict[str, Any]]
 				'snippet': snippet[:100] + '...' if len(snippet) > 100 else snippet,
 			})
 		
+		print(f"✅ Returning {len(threads)} threads")
 		return threads
 		
 	except HttpError as error:
