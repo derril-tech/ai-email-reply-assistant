@@ -39,10 +39,13 @@ def get_supabase_client() -> Optional[Client]:
 	
 	print(f"✅ Supabase client created with schema: {schema}")
 	
-	# Create client with custom schema
+	# Create client
 	client = create_client(url, key)
-	# Set the schema for all requests - CRITICAL FIX for emailreply schema
-	client.schema(schema)
+	
+	# Set schema in PostgREST headers (tells the API which schema to use)
+	# This sets the search_path for all queries
+	client.postgrest.schema(schema)
+	
 	return client
 
 
@@ -66,11 +69,11 @@ def resolve_oauth_token(project_id: str) -> str | None:
 	schema = os.getenv("SUPABASE_SCHEMA", "emailreply")
 	
 	try:
-		# Fetch token from oauth_tokens table with explicit schema
-		print(f"🔍 Querying oauth_tokens in schema: {schema}...")
+		# Fetch token from oauth_tokens table
+		# Schema is set via postgrest.schema() in get_supabase_client()
+		print(f"🔍 Querying oauth_tokens table...")
 		
-		# Query with explicit schema.table format
-		result = supabase.from_(f"{schema}.oauth_tokens").select("*").eq(
+		result = supabase.table("oauth_tokens").select("*").eq(
 			"project_id", project_id
 		).eq(
 			"provider", "google"

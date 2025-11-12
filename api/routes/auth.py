@@ -48,8 +48,8 @@ def get_supabase_client() -> Optional[Client]:
 	
 	# Create client with custom schema
 	client = create_client(url, key)
-	# Set the schema for all requests
-	client.schema(schema)
+	# Set the schema for all requests via PostgREST
+	client.postgrest.schema(schema)
 	return client
 
 
@@ -174,9 +174,9 @@ async def oauth_callback(
 					"scopes": ",".join(credentials.scopes) if credentials.scopes else "",
 				}
 				
-				# Upsert token with explicit schema.table format
-				print(f"💾 Storing tokens in {schema}.oauth_tokens...")
-				result = supabase.from_(f"{schema}.oauth_tokens").upsert(
+				# Upsert token (insert or update if exists)
+				print(f"💾 Storing tokens in oauth_tokens table...")
+				result = supabase.table("oauth_tokens").upsert(
 					token_record,
 					on_conflict="profile_id,project_id,provider"
 				).execute()
@@ -220,8 +220,8 @@ def auth_status(project_id: str = Query(default="default")):
 		return {"connected": False, "error": "Supabase not available"}
 	
 	try:
-		# Check if tokens exist for this project with explicit schema
-		result = supabase.from_(f"{schema}.oauth_tokens").select("*").eq(
+		# Check if tokens exist for this project
+		result = supabase.table("oauth_tokens").select("*").eq(
 			"project_id", project_id
 		).eq(
 			"provider", "google"
