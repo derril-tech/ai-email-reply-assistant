@@ -4,14 +4,14 @@ import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, User } from "lucide-react";
+import { Menu, User, Home, Mail, LayoutDashboard } from "lucide-react";
 import Image from "next/image";
 
 export default function NavBar() {
 	const [open, setOpen] = useState(false);
 	return (
-		<nav className="w-full border-b border-border bg-card backdrop-blur-sm">
-			<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+		<nav className="w-full border-b border-border bg-card backdrop-blur-sm sticky top-0 z-50">
+			<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 relative">
 				<Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold transition-all hover:opacity-90">
 					<Image src="/logo.png" alt="Logo" width={32} height={32} className="rounded-lg" />
 					<span className="hidden sm:inline">AI Email Reply Assistant</span>
@@ -45,6 +45,7 @@ export default function NavBar() {
 					<Menu className="h-5 w-5" />
 				</button>
 			</div>
+			{/* Mobile Dropdown Menu */}
 			<AnimatePresence>
 				{open && (
 					<>
@@ -52,36 +53,50 @@ export default function NavBar() {
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
-							transition={{ duration: 0.2 }}
-							className="fixed inset-0 z-50 bg-black/30 backdrop-blur-xs"
+							transition={{ duration: 0.15 }}
+							className="fixed inset-0 z-40 md:hidden"
 							onClick={() => setOpen(false)}
 							aria-hidden="true"
 						/>
 						<motion.div
-							initial={{ y: "100%" }}
-							animate={{ y: 0 }}
-							exit={{ y: "100%" }}
-							transition={{ type: "spring", damping: 25, stiffness: 300 }}
-							className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-card border-t p-6 shadow-glass"
+							initial={{ opacity: 0, y: -10 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -10 }}
+							transition={{ duration: 0.2 }}
+							className="absolute top-full right-0 mt-2 w-56 z-50 md:hidden"
 							onClick={(e) => e.stopPropagation()}
-							role="dialog"
-							aria-modal="true"
 						>
-							<div className="flex flex-col gap-4">
-								{/* Logo in mobile menu */}
-								<div className="flex items-center gap-2 pb-2 border-b border-border">
-									<Image src="/logo.png" alt="Logo" width={28} height={28} className="rounded-lg" />
-									<span className="font-display text-base font-semibold">Email AI</span>
-								</div>
-								
-								<Link href="/playground" className="text-base hover:text-primary transition-colors" onClick={() => setOpen(false)}>
-									Playground
-								</Link>
-								<Link href="/dashboard" className="text-base hover:text-primary transition-colors" onClick={() => setOpen(false)}>
-									Dashboard
-								</Link>
-								<div className="flex items-center justify-between pt-4 border-t border-border">
-									<ThemeToggle />
+							<div className="rounded-xl bg-card border border-border shadow-lg overflow-hidden">
+								<div className="flex flex-col p-2">
+									<Link 
+										href="/" 
+										className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent rounded-lg transition-colors" 
+										onClick={() => setOpen(false)}
+									>
+										<Home className="h-4 w-4" />
+										Home
+									</Link>
+									<Link 
+										href="/playground" 
+										className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent rounded-lg transition-colors" 
+										onClick={() => setOpen(false)}
+									>
+										<Mail className="h-4 w-4" />
+										Playground
+									</Link>
+									<Link 
+										href="/dashboard" 
+										className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent rounded-lg transition-colors" 
+										onClick={() => setOpen(false)}
+									>
+										<LayoutDashboard className="h-4 w-4" />
+										Dashboard
+									</Link>
+									<div className="border-t border-border my-2"></div>
+									<div className="flex items-center justify-between px-4 py-3">
+										<span className="text-sm text-muted-foreground">Theme</span>
+										<ThemeToggle />
+									</div>
 								</div>
 							</div>
 						</motion.div>
