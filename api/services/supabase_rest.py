@@ -39,7 +39,11 @@ def select_oauth_token(project_id: str, provider: str = "google") -> Optional[Di
 	try:
 		resp = requests.get(url_1, headers=headers_1, params=params, timeout=10)
 		if resp.status_code >= 400:
-			raise requests.HTTPError(f"{resp.status_code} {resp.reason}: {resp.text}", response=resp)
+			# Try RPC fallback before failing
+			try:
+				return _rpc_select_oauth_token(project_id, provider)
+			except Exception:
+				raise requests.HTTPError(f"{resp.status_code} {resp.reason}: {resp.text}", response=resp)
 		items = resp.json()
 		return items[0] if isinstance(items, list) and items else None
 	except Exception as e:
@@ -52,7 +56,8 @@ def select_oauth_token(project_id: str, provider: str = "google") -> Optional[Di
 		}
 		resp2 = requests.get(url_2, headers=headers_2, params=params, timeout=10)
 		if resp2.status_code >= 400:
-			raise requests.HTTPError(f"{resp2.status_code} {resp2.reason}: {resp2.text}", response=resp2)
+			# RPC fallback
+			return _rpc_select_oauth_token(project_id, provider)
 		items2 = resp2.json()
 		return items2[0] if isinstance(items2, list) and items2 else None
 
@@ -81,11 +86,63 @@ def upsert_oauth_token(record: Dict[str, Any]) -> Dict[str, Any]:
 		}
 		resp2 = requests.post(url_2, headers=headers_2, json=body, timeout=10)
 		if resp2.status_code >= 400:
-			raise requests.HTTPError(f"{resp2.status_code} {resp2.reason}: {resp2.text}", response=resp2)
+			# RPC fallback
+			return _rpc_upsert_oauth_token(record)
 		items2 = resp2.json()
 		return items2[0] if isinstance(items2, list) and items2 else record
 
 	items = resp.json()
 	return items[0] if isinstance(items, list) and items else record
+
+
+def _rpc_select_oauth_token(project_id: str, provider: str = "google") -> Optional[Dict[str, Any]]:
+	cfg = _get_base_headers()
+	url = f"{cfg['base_url']}/rest/v1/rpc/get_oauth_token"
+	headers = {
+		"apikey": cfg["apikey"],
+		"Authorization": f"Bearer {cfg['apikey']}",
+		"Content-Type": "application/json",
+		"Accept": "application/json",
+	}
+	payload = {
+		"p_project_id": project_id,
+		"p_provider": provider,
+	}
+	resp = requests.post(url, headers=headers, json=payload, timeout=10)
+	if resp.status_code >= 400:
+		raise requests.HTTPError(f"{resp.status_code} {resp.reason}: {resp.text}", response=resp)
+	data = resp.json()
+	# RPC RETURNS TABLE → usually an array; handle both forms defensively
+	if isinstance(data, list):
+		return data[0] if data else None
+	return data if isinstance(data, dict) else None
+
+
+def _rpc_upsert_oauth_token(record: Dict[str, Any]) -> Dict[str, Any]:
+	cfg = _get_base_headers()
+	url = f"{cfg['base_url']}/rest/v1/rpc/upsert_oauth_token"
+	headers = {
+		"apikey": cfg["apikey"],
+		"Authorization": f"Bearer {cfg['apikey']}",
+		"Content-Type": "application/json",
+		"Accept": "application/json",
+	}
+	payload = {
+		"p_profile_id": record.get("profile_id"),
+		"p_project_id": record.get("project_id"),
+		"p_provider": record.get("provider", "google"),
+		"p_access_token": record.get("access_token"),
+		"p_refresh_token": record.get("refresh_token"),
+		"p_expires_at": record.get("expires_at"),
+		"p_scopes": record.get("scopes"),
+	}
+	resp = requests.post(url, headers=headers, json=payload, timeout=10)
+	if resp.status_code >= 400:
+		raise requests.HTTPError(f"{resp.status_code} {resp.reason}: {resp.text}", response=resp)
+	data = resp.json()
+	# Function returns one row (composite); handle object or single-element array
+	if isinstance(data, list):
+		return data[0] if data else record
+	return data if isinstance(data, dict) else record
 
 
