@@ -60,48 +60,33 @@ def run_agent(body: RunBody):
     job_id = str(uuid.uuid4())
     JOBS[job_id] = {"status": "queued", "result": None, "started_at": time.time()}
 
-    try:
-        # Resolve Gmail token and fetch thread
-        access_token = gmail.resolve_oauth_token(body.projectId)
-        if not access_token:
-            raise HTTPException(status_code=401, detail="Gmail not connected or token expired. Please reconnect Gmail.")
-        
-        thread_text = gmail.fetch_thread_text(body.meta["threadId"], access_token)
+    # Resolve Gmail token and fetch thread (stubbed)
+    access_token = gmail.resolve_oauth_token(body.projectId)
+    thread_text = gmail.fetch_thread_text(body.meta["threadId"], access_token)
 
-        # Generate draft via adapter
-        controls = dict(body.meta or {})
-        draft = openai_email_reply.draft_reply(thread_text=thread_text, controls=controls)
+    # Generate draft via adapter
+    controls = dict(body.meta or {})
+    draft = openai_email_reply.draft_reply(thread_text=thread_text, controls=controls)
 
-        result_payload = {
-            "text": draft.get("text", ""),
-            "meta": {
-                "threadId": body.meta["threadId"],
-                "tone": body.meta.get("tone", "friendly"),
-                "subject": draft.get("meta", {}).get("subject"),
-                "participants": draft.get("meta", {}).get("participants"),
-                "token_usage": draft.get("meta", {}).get("token_usage"),
-            },
-            "projectId": body.projectId,
-            "input": body.input,
-        }
+    result_payload = {
+        "text": draft.get("text", ""),
+        "meta": {
+            "threadId": body.meta["threadId"],
+            "tone": body.meta.get("tone", "friendly"),
+            "subject": draft.get("meta", {}).get("subject"),
+            "participants": draft.get("meta", {}).get("participants"),
+            "token_usage": draft.get("meta", {}).get("token_usage"),
+        },
+        "projectId": body.projectId,
+        "input": body.input,
+    }
 
-        # Best-effort persistence (stubbed / optional)
-        persistence.persist_message_to_supabase(body.projectId, result_payload)
-        persistence.write_job_to_redis(job_id, {"status": "done", "result": result_payload})
+    # Best-effort persistence (stubbed / optional)
+    persistence.persist_message_to_supabase(body.projectId, result_payload)
+    persistence.write_job_to_redis(job_id, {"status": "done", "result": result_payload})
 
-        JOBS[job_id] = {"status": "done", "result": result_payload, "started_at": time.time()}
-        return {"jobId": job_id}
-    
-    except HTTPException:
-        raise
-    except RuntimeError as e:
-        error_msg = str(e)
-        if "permission denied" in error_msg.lower() or "403" in error_msg:
-            raise HTTPException(status_code=403, detail="Gmail permission error. Please reconnect Gmail to grant full access.")
-        raise HTTPException(status_code=500, detail=f"Failed to process thread: {error_msg}")
-    except Exception as e:
-        print(f"Error in run_agent: {e}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    JOBS[job_id] = {"status": "done", "result": result_payload, "started_at": time.time()}
+    return {"jobId": job_id}
 
 @app.get("/jobs/{job_id}")
 def get_job(job_id: str):
