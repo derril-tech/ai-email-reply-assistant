@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, Copy, Send, RefreshCw, Mail, Search } from "lucide-react";
+import { History, X, Send, RefreshCw, Mail, Search } from "lucide-react";
 
 type UIState = "hero" | "threadPicker" | "compose" | "result" | "batchResults";
 
@@ -102,7 +102,7 @@ function PlaygroundContent() {
 				throw new Error(error.detail || 'Failed to send email');
 			}
 
-			const data = await response.json();
+			await response.json();
 
 			toast.success('Email sent successfully! ✉️');
 

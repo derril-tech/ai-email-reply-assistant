@@ -38,7 +38,7 @@ export function DraftEditor({ initialDraft, onRegenerate, isRegenerating }: Draf
 		try {
 			await navigator.clipboard.writeText(draft);
 			toast.success('Draft copied to clipboard!');
-		} catch (error) {
+		} catch (_error) {
 			// Fallback for older browsers
 			const textarea = document.createElement('textarea');
 			textarea.value = draft;
