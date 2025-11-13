@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from './ui/button';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { Copy, RotateCw, Trash2 } from 'lucide-react';
 
 interface DraftEditorProps {
