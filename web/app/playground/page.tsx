@@ -8,6 +8,8 @@ import { useThreads } from "../../hooks/useThreads";
 import LoaderDots from "../../components/LoaderDots";
 import EmptyState from "../../components/EmptyState";
 import { DraftEditor } from "../../components/DraftEditor";
+import { ToneSelector } from "../../components/ToneSelector";
+import { SentimentBadge } from "../../components/SentimentBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -507,11 +509,14 @@ function PlaygroundContent() {
 														}
 													}}
 												>
-													<div className="flex-1">
-														<div className="text-sm font-medium">{t.subject}</div>
-														<div className="text-xs text-muted-foreground mt-0.5">{t.from}</div>
-														<div className="text-xs text-muted-foreground mt-1">{t.snippet}</div>
+												<div className="flex-1">
+													<div className="text-sm font-medium flex items-center gap-2">
+														<span className="flex-1">{t.subject}</span>
+														<SentimentBadge subject={t.subject} snippet={t.snippet} />
 													</div>
+													<div className="text-xs text-muted-foreground mt-0.5">{t.from}</div>
+													<div className="text-xs text-muted-foreground mt-1">{t.snippet}</div>
+												</div>
 													<div className="text-xs text-muted-foreground whitespace-nowrap ml-4">
 														{new Date(t.date).toLocaleDateString()}
 													</div>
@@ -539,19 +544,11 @@ function PlaygroundContent() {
 							</Card>
 							<Card className="p-6">
 								<h3 className="text-base font-semibold font-display">Draft Controls</h3>
-								<div className="mt-4 grid gap-4">
-									<label className="flex flex-col gap-2 text-sm">
-										<span className="font-medium">Tone</span>
-										<select
-											value={tone}
-											onChange={(e) => setTone(e.target.value as "friendly" | "formal" | "brief")}
-											className="rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<option value="friendly">Friendly</option>
-											<option value="formal">Formal</option>
-											<option value="brief">Brief</option>
-										</select>
-									</label>
+								<div className="mt-4 grid gap-6">
+									<div className="flex flex-col gap-2">
+										<span className="font-medium text-sm">Tone</span>
+										<ToneSelector value={tone} onChange={setTone} />
+									</div>
 									<label className="flex flex-col gap-2 text-sm">
 										<span className="font-medium">Length: {length} words</span>
 										<Slider

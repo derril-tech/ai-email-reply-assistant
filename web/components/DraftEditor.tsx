@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from './ui/button';
 import { toast } from 'react-hot-toast';
-import { Copy, RotateCw, Trash2 } from 'lucide-react';
+import { Copy, RotateCw, Trash2, FileText } from 'lucide-react';
+import { TemplatesSidebar } from './TemplatesSidebar';
+import { AnimatePresence } from 'framer-motion';
 
 interface DraftEditorProps {
 	initialDraft: string;
@@ -14,6 +16,7 @@ interface DraftEditorProps {
 export function DraftEditor({ initialDraft, onRegenerate, isRegenerating }: DraftEditorProps) {
 	const [draft, setDraft] = useState(initialDraft);
 	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [showTemplates, setShowTemplates] = useState(false);
 
 	// Update when new draft arrives from API
 	useEffect(() => {
@@ -126,6 +129,17 @@ export function DraftEditor({ initialDraft, onRegenerate, isRegenerating }: Draf
 					<Button
 						size="sm"
 						variant="outline"
+						onClick={() => setShowTemplates(true)}
+						disabled={isRegenerating}
+						title="Insert template"
+						aria-label="Insert template"
+					>
+						<FileText className="h-4 w-4 sm:mr-1" />
+						<span className="hidden sm:inline">Templates</span>
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
 						onClick={handleClear}
 						disabled={!draft || isRegenerating}
 						title="Clear draft (Ctrl+K)"
@@ -157,6 +171,19 @@ export function DraftEditor({ initialDraft, onRegenerate, isRegenerating }: Draf
 					</Button>
 				</div>
 			</div>
+
+			{/* Templates Sidebar */}
+			<AnimatePresence>
+				{showTemplates && (
+					<TemplatesSidebar
+						onInsert={(content) => {
+							setDraft(content);
+							setShowTemplates(false);
+						}}
+						onClose={() => setShowTemplates(false)}
+					/>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }
