@@ -14,7 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, Copy, Send, RefreshCw, Mail } from "lucide-react";
+import { History, X, Copy, Send, RefreshCw, Mail, Search } from "lucide-react";
 
 type UIState = "hero" | "threadPicker" | "compose" | "result";
 
@@ -34,6 +34,7 @@ function PlaygroundContent() {
 	const [bullets, setBullets] = useState<boolean>(false);
 	const [showHistory, setShowHistory] = useState<boolean>(false);
 	const [isSending, setIsSending] = useState<boolean>(false);
+	const [searchQuery, setSearchQuery] = useState<string>("");
 	const [history, setHistory] = useState<DraftHistory[]>([]);
 	const { run, status, result } = useAgent("default");
 	const { isAuthorized, loading: authLoading, connectGmail } = useGmailAuth("default");
@@ -117,6 +118,46 @@ function PlaygroundContent() {
 			setIsSending(false);
 		}
 	};
+
+	// Filter threads based on search query
+	const filteredThreads = useMemo(() => {
+		if (!searchQuery.trim()) {
+			return threads; // No search query, return all threads
+		}
+
+		const lowerQuery = searchQuery.toLowerCase();
+
+		return threads.filter((thread) => {
+			const subject = thread.subject?.toLowerCase() || "";
+			const from = thread.from?.toLowerCase() || "";
+			const snippet = thread.snippet?.toLowerCase() || "";
+
+			return (
+				subject.includes(lowerQuery) ||
+				from.includes(lowerQuery) ||
+				snippet.includes(lowerQuery)
+			);
+		});
+	}, [threads, searchQuery]);
+
+	// Keyboard shortcuts for search
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			// Focus search input with Ctrl+F / Cmd+F
+			if ((event.ctrlKey || event.metaKey) && event.key === 'f' && ui === 'threadPicker') {
+				event.preventDefault();
+				document.getElementById('thread-search')?.focus();
+			}
+
+			// Clear search with Escape
+			if (event.key === 'Escape' && searchQuery && document.activeElement?.id === 'thread-search') {
+				setSearchQuery("");
+			}
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [searchQuery, ui]);
 
 	const section = useMemo(
 		() => ({
@@ -227,7 +268,26 @@ function PlaygroundContent() {
 								<div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 									<h2 className="text-xl font-semibold font-display">Threads</h2>
 									<div className="flex gap-2 items-center">
-										<Input placeholder="Search threads..." className="md:w-64" />
+										<div className="relative">
+											<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+											<Input 
+												id="thread-search"
+												placeholder="Search threads..." 
+												className="md:w-64 pl-10 pr-10" 
+												value={searchQuery}
+												onChange={(e) => setSearchQuery(e.target.value)}
+												aria-label="Search threads by subject or sender"
+											/>
+											{searchQuery && (
+												<button
+													onClick={() => setSearchQuery("")}
+													className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+													aria-label="Clear search"
+												>
+													<X className="h-4 w-4" />
+												</button>
+											)}
+										</div>
 										<Button
 											variant="outline"
 											size="sm"
@@ -239,6 +299,13 @@ function PlaygroundContent() {
 									</div>
 								</div>
 								
+								{/* Results count */}
+								{searchQuery && threads.length > 0 && (
+									<p className="text-xs text-muted-foreground mb-4">
+										Showing {filteredThreads.length} of {threads.length} thread{threads.length !== 1 ? 's' : ''}
+									</p>
+								)}
+								
 								{threadsLoading ? (
 									<div className="py-8">
 										<LoaderDots label="Loading threads..." />
@@ -249,6 +316,15 @@ function PlaygroundContent() {
 										title="Failed to load threads"
 										description={threadsError}
 									/>
+								) : filteredThreads.length === 0 && searchQuery ? (
+									<div className="py-8 text-center">
+										<p className="text-sm text-muted-foreground mb-4">
+											No threads match "{searchQuery}"
+										</p>
+										<Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+											Clear Search
+										</Button>
+									</div>
 								) : threads.length === 0 ? (
 									<EmptyState
 										icon="📭"
@@ -257,7 +333,7 @@ function PlaygroundContent() {
 									/>
 								) : (
 									<ul className="divide-y divide-border">
-										{threads.map((t) => (
+										{filteredThreads.map((t) => (
 											<motion.li
 												key={t.id}
 												whileHover={{ backgroundColor: "var(--accent)" }}
