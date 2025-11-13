@@ -64,7 +64,9 @@ def run_agent(body: RunBody):
         # Resolve Gmail token and fetch thread
         access_token = gmail.resolve_oauth_token(body.projectId)
         if not access_token:
-            raise HTTPException(status_code=401, detail="Gmail not connected or token expired. Please reconnect Gmail.")
+            error_msg = "Gmail not connected or token expired. Please reconnect Gmail."
+            JOBS[job_id] = {"status": "error", "error": error_msg, "started_at": time.time()}
+            return {"jobId": job_id}
         
         thread_text = gmail.fetch_thread_text(body.meta["threadId"], access_token)
 
@@ -92,16 +94,17 @@ def run_agent(body: RunBody):
         JOBS[job_id] = {"status": "done", "result": result_payload, "started_at": time.time()}
         return {"jobId": job_id}
     
-    except HTTPException:
-        raise
     except RuntimeError as e:
         error_msg = str(e)
         if "permission denied" in error_msg.lower() or "403" in error_msg:
-            raise HTTPException(status_code=403, detail="Gmail permission error. Please reconnect Gmail to grant full access.")
-        raise HTTPException(status_code=500, detail=f"Failed to process thread: {error_msg}")
+            error_msg = "Gmail permission error. Please reconnect Gmail to grant full access."
+        JOBS[job_id] = {"status": "error", "error": error_msg, "started_at": time.time()}
+        return {"jobId": job_id}
     except Exception as e:
         print(f"Error in run_agent: {e}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        error_msg = f"Unexpected error: {str(e)}"
+        JOBS[job_id] = {"status": "error", "error": error_msg, "started_at": time.time()}
+        return {"jobId": job_id}
 
 @app.get("/jobs/{job_id}")
 def get_job(job_id: str):
