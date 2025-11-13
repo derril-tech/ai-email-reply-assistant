@@ -69,7 +69,14 @@ as $$
 	) values (
 		coalesce(
 			p_profile_id,
-			uuid_generate_v5('6ba7b810-9dad-11d1-80b4-00c04fd430c8'::uuid, p_project_id)
+			(
+				select t.profile_id
+				from emailreply.oauth_tokens t
+				where t.project_id = p_project_id and t.provider = p_provider
+				order by t.updated_at desc nulls last
+				limit 1
+			),
+			gen_random_uuid()
 		),
 		p_project_id, p_provider, p_access_token, p_refresh_token, p_expires_at, p_scopes, now()
 	)
