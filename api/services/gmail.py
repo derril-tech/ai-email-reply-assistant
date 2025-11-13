@@ -180,10 +180,13 @@ def fetch_thread_text(thread_id: str, access_token: str | None) -> str:
 		
 	except HttpError as error:
 		print(f"Gmail API error: {error}")
-		return f"[Thread {thread_id}] Error fetching thread: {error}"
+		error_msg = str(error)
+		if "403" in error_msg or "insufficient" in error_msg.lower():
+			raise RuntimeError(f"Gmail API permission denied. Please reconnect Gmail with updated permissions. Error: {error}")
+		raise RuntimeError(f"Gmail API error fetching thread {thread_id}: {error}")
 	except Exception as e:
 		print(f"Unexpected error fetching thread: {e}")
-		return f"[Thread {thread_id}] Unexpected error: {e}"
+		raise RuntimeError(f"Failed to fetch thread {thread_id}: {e}")
 
 
 def _extract_message_body(payload: Dict[str, Any]) -> str:

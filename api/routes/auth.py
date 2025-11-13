@@ -29,7 +29,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 SCOPES = [
 	'https://www.googleapis.com/auth/gmail.readonly',
 	'https://www.googleapis.com/auth/gmail.send',
-	'https://www.googleapis.com/auth/gmail.metadata',
+	# Note: gmail.readonly includes metadata access, so we don't need gmail.metadata separately
 ]
 
 
