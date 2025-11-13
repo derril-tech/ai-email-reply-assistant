@@ -68,6 +68,12 @@ export default function NavBar() {
 							aria-modal="true"
 						>
 							<div className="flex flex-col gap-4">
+								{/* Logo in mobile menu */}
+								<div className="flex items-center gap-2 pb-2 border-b border-border">
+									<Image src="/logo.png" alt="Logo" width={28} height={28} className="rounded-lg" />
+									<span className="font-display text-base font-semibold">Email AI</span>
+								</div>
+								
 								<Link href="/playground" className="text-base hover:text-primary transition-colors" onClick={() => setOpen(false)}>
 									Playground
 								</Link>
@@ -75,7 +81,6 @@ export default function NavBar() {
 									Dashboard
 								</Link>
 								<div className="flex items-center justify-between pt-4 border-t border-border">
-									<span className="text-sm text-muted-foreground">Theme</span>
 									<ThemeToggle />
 								</div>
 							</div>
