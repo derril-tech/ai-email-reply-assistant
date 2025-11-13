@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { History, X, Copy, Send, RefreshCw, Mail, Search } from "lucide-react";
 
-type UIState = "hero" | "threadPicker" | "compose" | "result";
+type UIState = "hero" | "threadPicker" | "compose" | "result" | "batchResults";
 
 type DraftHistory = {
 	id: string;
@@ -35,6 +36,9 @@ function PlaygroundContent() {
 	const [showHistory, setShowHistory] = useState<boolean>(false);
 	const [isSending, setIsSending] = useState<boolean>(false);
 	const [searchQuery, setSearchQuery] = useState<string>("");
+	const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
+	const [batchStatus, setBatchStatus] = useState<Map<string, "queued" | "running" | "done" | "error">>(new Map());
+	const [batchResults, setBatchResults] = useState<Map<string, any>>(new Map());
 	const [history, setHistory] = useState<DraftHistory[]>([]);
 	const { run, status, result } = useAgent("default");
 	const { isAuthorized, loading: authLoading, connectGmail } = useGmailAuth("default");
@@ -158,6 +162,117 @@ function PlaygroundContent() {
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
 	}, [searchQuery, ui]);
+
+	// Batch selection handlers
+	const toggleThreadSelection = (threadId: string) => {
+		setSelectedThreadIds((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(threadId)) {
+				newSet.delete(threadId);
+			} else {
+				newSet.add(threadId);
+			}
+			return newSet;
+		});
+	};
+
+	const selectAllThreads = () => {
+		setSelectedThreadIds(new Set(filteredThreads.map((t) => t.id)));
+	};
+
+	const deselectAllThreads = () => {
+		setSelectedThreadIds(new Set());
+	};
+
+	// Poll for job result
+	const pollForResult = async (jobId: string, apiUrl: string, maxAttempts = 30): Promise<any> => {
+		for (let i = 0; i < maxAttempts; i++) {
+			const response = await fetch(`${apiUrl}/jobs/${jobId}`);
+			if (!response.ok) throw new Error('Failed to check job status');
+			
+			const job = await response.json();
+			
+			if (job.status === 'done') {
+				return job.result;
+			} else if (job.status === 'error') {
+				throw new Error(job.error || 'Job failed');
+			}
+			
+			// Wait 2 seconds before next poll
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+		}
+		
+		throw new Error('Job timed out');
+	};
+
+	// Batch generation handler
+	const handleBatchGenerate = async () => {
+		if (selectedThreadIds.size < 2) {
+			toast.error("Please select at least 2 threads.");
+			return;
+		}
+
+		// Confirm with user
+		if (!confirm(`Generate drafts for ${selectedThreadIds.size} threads?`)) {
+			return;
+		}
+
+		// Initialize batch status
+		const initialStatus = new Map<string, "queued" | "running" | "done" | "error">();
+		selectedThreadIds.forEach((id) => initialStatus.set(id, "queued"));
+		setBatchStatus(initialStatus);
+
+		// Reset results
+		setBatchResults(new Map());
+
+		// Switch to batch results view
+		setUi("batchResults");
+
+		// Generate drafts sequentially (to avoid rate limits)
+		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+		let completed = 0;
+
+		for (const threadId of Array.from(selectedThreadIds)) {
+			try {
+				// Update status to running
+				setBatchStatus((prev) => new Map(prev).set(threadId, "running"));
+
+				// Call /agent/run
+				const response = await fetch(`${apiUrl}/agent/run`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						projectId: 'default',
+						input: '',
+						meta: { threadId, tone, length, bullets },
+					}),
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to start draft generation');
+				}
+
+				const { jobId } = await response.json();
+
+				// Poll for result
+				const result = await pollForResult(jobId, apiUrl);
+
+				// Update status and result
+				setBatchStatus((prev) => new Map(prev).set(threadId, "done"));
+				setBatchResults((prev) => new Map(prev).set(threadId, result));
+
+				completed++;
+				toast.success(`Draft ${completed} of ${selectedThreadIds.size} completed`);
+
+			} catch (error: any) {
+				console.error(`Error generating draft for thread ${threadId}:`, error);
+				setBatchStatus((prev) => new Map(prev).set(threadId, "error"));
+				toast.error(`Failed for thread ${threadId}`);
+			}
+		}
+
+		toast.success(`Batch complete! ${completed} of ${selectedThreadIds.size} drafts generated.`);
+	};
 
 	const section = useMemo(
 		() => ({
@@ -299,6 +414,36 @@ function PlaygroundContent() {
 									</div>
 								</div>
 								
+								{/* Batch Selection Controls */}
+								{filteredThreads.length > 0 && (
+									<div className="mb-4 flex items-center justify-between">
+										<div className="flex gap-2">
+											<Button 
+												variant="outline" 
+												size="sm" 
+												onClick={selectAllThreads}
+												disabled={selectedThreadIds.size === filteredThreads.length}
+											>
+												Select All
+											</Button>
+											<Button 
+												variant="outline" 
+												size="sm" 
+												onClick={deselectAllThreads}
+												disabled={selectedThreadIds.size === 0}
+											>
+												Deselect All
+											</Button>
+										</div>
+										
+										{selectedThreadIds.size >= 2 && (
+											<Button onClick={handleBatchGenerate} className="bg-[#05c290] hover:bg-[#04ab7e]">
+												Generate Drafts for All ({selectedThreadIds.size})
+											</Button>
+										)}
+									</div>
+								)}
+								
 								{/* Results count */}
 								{searchQuery && threads.length > 0 && (
 									<p className="text-xs text-muted-foreground mb-4">
@@ -337,26 +482,39 @@ function PlaygroundContent() {
 											<motion.li
 												key={t.id}
 												whileHover={{ backgroundColor: "var(--accent)" }}
-												className="flex cursor-pointer items-center justify-between py-3 rounded-md px-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring"
-												onClick={() => {
-													setSelectedThreadId(t.id);
-													setUi("compose");
-												}}
-												tabIndex={0}
-												onKeyDown={(e) => {
-													if (e.key === "Enter" || e.key === " ") {
+												className="flex items-center gap-3 py-3 rounded-md px-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+											>
+												{/* Checkbox */}
+												<Checkbox
+													checked={selectedThreadIds.has(t.id)}
+													onCheckedChange={() => toggleThreadSelection(t.id)}
+													aria-label={`Select thread: ${t.subject}`}
+													onClick={(e) => e.stopPropagation()}
+												/>
+												
+												{/* Thread Content */}
+												<div 
+													className="flex-1 flex items-center justify-between cursor-pointer"
+													onClick={() => {
 														setSelectedThreadId(t.id);
 														setUi("compose");
-													}
-												}}
-											>
-												<div className="flex-1">
-													<div className="text-sm font-medium">{t.subject}</div>
-													<div className="text-xs text-muted-foreground mt-0.5">{t.from}</div>
-													<div className="text-xs text-muted-foreground mt-1">{t.snippet}</div>
-												</div>
-												<div className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-													{new Date(t.date).toLocaleDateString()}
+													}}
+													tabIndex={0}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															setSelectedThreadId(t.id);
+															setUi("compose");
+														}
+													}}
+												>
+													<div className="flex-1">
+														<div className="text-sm font-medium">{t.subject}</div>
+														<div className="text-xs text-muted-foreground mt-0.5">{t.from}</div>
+														<div className="text-xs text-muted-foreground mt-1">{t.snippet}</div>
+													</div>
+													<div className="text-xs text-muted-foreground whitespace-nowrap ml-4">
+														{new Date(t.date).toLocaleDateString()}
+													</div>
 												</div>
 											</motion.li>
 										))}
@@ -487,6 +645,92 @@ function PlaygroundContent() {
 									</Button>
 								</div>
 							)}
+						</Card>
+					</motion.section>
+				)}
+			</AnimatePresence>
+
+			<AnimatePresence mode="wait">
+				{ui === "batchResults" && (
+					<motion.section {...section}>
+						<Card className="p-6">
+							<div className="mb-4 flex items-center justify-between">
+								<h2 className="text-xl font-semibold font-display">Batch Results</h2>
+								<Button variant="outline" onClick={() => setUi("threadPicker")}>
+									Back to Threads
+								</Button>
+							</div>
+
+							{/* Progress Summary */}
+							<div className="mb-6">
+								<p className="text-sm text-muted-foreground mb-2">
+									{Array.from(batchStatus.values()).filter((s) => s === "done").length} of {batchStatus.size} completed
+								</p>
+								<div className="w-full bg-muted rounded-full h-2">
+									<div 
+										className="bg-primary h-2 rounded-full transition-all duration-300"
+										style={{ 
+											width: `${(Array.from(batchStatus.values()).filter((s) => s === "done").length / batchStatus.size) * 100}%` 
+										}}
+									></div>
+								</div>
+							</div>
+
+							{/* Results List */}
+							<div className="space-y-3">
+								{Array.from(selectedThreadIds).map((threadId) => {
+									const status = batchStatus.get(threadId) || "queued";
+									const result = batchResults.get(threadId);
+									const thread = threads.find((t) => t.id === threadId);
+
+									return (
+										<Card key={threadId} className="p-4">
+											<div className="flex items-start gap-3">
+												{/* Status Icon */}
+												<div className="mt-1">
+													{status === "queued" && <span className="text-muted-foreground">⏳</span>}
+													{status === "running" && <RefreshCw className="h-4 w-4 animate-spin text-primary" />}
+													{status === "done" && <span className="text-green-500">✅</span>}
+													{status === "error" && <span className="text-red-500">❌</span>}
+												</div>
+
+												{/* Thread Info */}
+												<div className="flex-1">
+													<h3 className="text-sm font-medium">{thread?.subject || "Unknown Thread"}</h3>
+													<p className="text-xs text-muted-foreground mt-1">{thread?.from || ""}</p>
+
+													{/* Draft Preview */}
+													{result && (
+														<div className="mt-3">
+															<p className="text-xs text-muted-foreground line-clamp-2">
+																{result.text.substring(0, 150)}...
+															</p>
+															<div className="mt-2 flex gap-2">
+																<Button 
+																	size="sm" 
+																	variant="outline"
+																	onClick={() => {
+																		setSelectedThreadId(threadId);
+																		// Switch to single result view
+																		setUi("result");
+																	}}
+																>
+																	View Full
+																</Button>
+															</div>
+														</div>
+													)}
+
+													{/* Error Message */}
+													{status === "error" && (
+														<p className="text-xs text-red-500 mt-2">Failed to generate draft</p>
+													)}
+												</div>
+											</div>
+										</Card>
+									);
+								})}
+							</div>
 						</Card>
 					</motion.section>
 				)}
