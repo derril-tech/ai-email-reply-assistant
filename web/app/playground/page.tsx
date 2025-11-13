@@ -10,6 +10,7 @@ import EmptyState from "../../components/EmptyState";
 import { DraftEditor } from "../../components/DraftEditor";
 import { ToneSelector } from "../../components/ToneSelector";
 import { SentimentBadge } from "../../components/SentimentBadge";
+import { ThreadViewer } from "../../components/ThreadViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -534,13 +535,17 @@ function PlaygroundContent() {
 					{ui === "compose" && (
 						<motion.section {...section} className="grid gap-6 lg:grid-cols-2">
 							<Card className="p-6">
-								<h3 className="text-base font-semibold font-display">Thread Context</h3>
-								<div className="mt-3 h-64 overflow-auto rounded-md border border-border p-3 text-sm focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
-									<p><strong>Subject:</strong> {threads.find((t) => t.id === selectedThreadId)?.subject}</p>
-									<p className="mt-2">
-										<strong>Preview:</strong> {threads.find((t) => t.id === selectedThreadId)?.snippet}
-									</p>
-								</div>
+								<h3 className="text-base font-semibold font-display mb-4">Thread Context</h3>
+								<ThreadViewer
+									subject={threads.find((t) => t.id === selectedThreadId)?.subject || ""}
+									messages={[
+										{
+											from: threads.find((t) => t.id === selectedThreadId)?.from || "Unknown",
+											date: threads.find((t) => t.id === selectedThreadId)?.date || new Date().toISOString(),
+											snippet: threads.find((t) => t.id === selectedThreadId)?.snippet || "",
+										},
+									]}
+								/>
 							</Card>
 							<Card className="p-6">
 								<h3 className="text-base font-semibold font-display">Draft Controls</h3>
