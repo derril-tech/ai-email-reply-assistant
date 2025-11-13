@@ -51,7 +51,7 @@ grant execute on function public.get_oauth_token(text, text) to anon, authentica
 
 -- Upsert token record
 create or replace function public.upsert_oauth_token(
-	p_profile_id uuid default null,
+	p_profile_id uuid,
 	p_project_id text,
 	p_provider text,
 	p_access_token text,
