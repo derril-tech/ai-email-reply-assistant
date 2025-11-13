@@ -386,20 +386,21 @@ function PlaygroundContent() {
 								<div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 									<h2 className="text-xl font-semibold font-display">Threads</h2>
 									<div className="flex gap-2 items-center">
-										<div className="relative">
+										<div className="relative flex-1 sm:flex-none">
 											<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 											<Input 
 												id="thread-search"
 												placeholder="Search threads..." 
-												className="md:w-64 pl-10 pr-10" 
+												className="w-full sm:w-64 pl-10 pr-10 h-11 sm:h-10" 
 												value={searchQuery}
 												onChange={(e) => setSearchQuery(e.target.value)}
 												aria-label="Search threads by subject or sender"
+												title="Tip: Press Ctrl+F to focus search"
 											/>
 											{searchQuery && (
 												<button
 													onClick={() => setSearchQuery("")}
-													className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+													className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
 													aria-label="Clear search"
 												>
 													<X className="h-4 w-4" />
@@ -419,13 +420,14 @@ function PlaygroundContent() {
 								
 								{/* Batch Selection Controls */}
 								{filteredThreads.length > 0 && (
-									<div className="mb-4 flex items-center justify-between">
-										<div className="flex gap-2">
+									<div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+										<div className="flex gap-2 flex-wrap">
 											<Button 
 												variant="outline" 
 												size="sm" 
 												onClick={selectAllThreads}
 												disabled={selectedThreadIds.size === filteredThreads.length}
+												className="h-10 sm:h-9"
 											>
 												Select All
 											</Button>
@@ -434,13 +436,17 @@ function PlaygroundContent() {
 												size="sm" 
 												onClick={deselectAllThreads}
 												disabled={selectedThreadIds.size === 0}
+												className="h-10 sm:h-9"
 											>
 												Deselect All
 											</Button>
 										</div>
 										
 										{selectedThreadIds.size >= 2 && (
-											<Button onClick={handleBatchGenerate} className="bg-[#05c290] hover:bg-[#04ab7e]">
+											<Button 
+												onClick={handleBatchGenerate} 
+												className="bg-[#05c290] hover:bg-[#04ab7e] h-10 sm:h-9 w-full sm:w-auto"
+											>
 												Generate Drafts for All ({selectedThreadIds.size})
 											</Button>
 										)}

@@ -25,7 +25,15 @@ export default function NavBar() {
 						Dashboard
 					</Link>
 					<ThemeToggle />
-					<button className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground" aria-label="User menu">
+					<button 
+						className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground" 
+						aria-label="User profile (Coming soon)"
+						title="User profile (Coming soon)"
+						onClick={() => {
+							// Future: Open user profile menu
+							alert("User profile feature coming soon!");
+						}}
+					>
 						<User className="h-4 w-4" />
 					</button>
 				</div>
