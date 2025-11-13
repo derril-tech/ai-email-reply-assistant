@@ -128,7 +128,8 @@ def _rpc_upsert_oauth_token(record: Dict[str, Any]) -> Dict[str, Any]:
 		"Accept": "application/json",
 	}
 	payload = {
-		"p_profile_id": record.get("profile_id"),
+		# Send null to let the SQL function derive a stable UUID from project_id
+		"p_profile_id": None,
 		"p_project_id": record.get("project_id"),
 		"p_provider": record.get("provider", "google"),
 		"p_access_token": record.get("access_token"),

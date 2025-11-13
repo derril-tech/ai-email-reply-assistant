@@ -1,6 +1,7 @@
 -- RPC functions to read/write emailreply.oauth_tokens via public schema (PostgREST-exposed)
 
 create extension if not exists pgcrypto;
+create extension if not exists "uuid-ossp";
 
 -- Ensure schema and table/columns exist to avoid function creation errors
 create schema if not exists emailreply;
@@ -50,7 +51,7 @@ grant execute on function public.get_oauth_token(text, text) to anon, authentica
 
 -- Upsert token record
 create or replace function public.upsert_oauth_token(
-	p_profile_id text,
+	p_profile_id uuid default null,
 	p_project_id text,
 	p_provider text,
 	p_access_token text,
@@ -66,7 +67,11 @@ as $$
 	insert into emailreply.oauth_tokens (
 		profile_id, project_id, provider, access_token, refresh_token, expires_at, scopes, updated_at
 	) values (
-		p_profile_id, p_project_id, p_provider, p_access_token, p_refresh_token, p_expires_at, p_scopes, now()
+		coalesce(
+			p_profile_id,
+			uuid_generate_v5('6ba7b810-9dad-11d1-80b4-00c04fd430c8'::uuid, p_project_id)
+		),
+		p_project_id, p_provider, p_access_token, p_refresh_token, p_expires_at, p_scopes, now()
 	)
 	on conflict (profile_id, project_id, provider)
 	do update set
@@ -78,7 +83,7 @@ as $$
 	returning *;
 $$;
 
-grant execute on function public.upsert_oauth_token(text, text, text, text, text, timestamptz, text) to anon, authenticated, service_role;
+grant execute on function public.upsert_oauth_token(uuid, text, text, text, text, timestamptz, text) to anon, authenticated, service_role;
 
 -- Nudge PostgREST to reload schema/functions
 notify pgrst, 'reload schema';
