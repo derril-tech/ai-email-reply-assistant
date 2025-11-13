@@ -33,6 +33,7 @@ function PlaygroundContent() {
 	const [length, setLength] = useState<number>(150);
 	const [bullets, setBullets] = useState<boolean>(false);
 	const [showHistory, setShowHistory] = useState<boolean>(false);
+	const [isSending, setIsSending] = useState<boolean>(false);
 	const [history, setHistory] = useState<DraftHistory[]>([]);
 	const { run, status, result } = useAgent("default");
 	const { isAuthorized, loading: authLoading, connectGmail } = useGmailAuth("default");
@@ -68,6 +69,54 @@ function PlaygroundContent() {
 		}
 		if (status === "error") toast.error("Failed to generate reply");
 	}, [status, result, selectedThreadId]);
+
+	// Send email handler
+	const handleSendToGmail = async () => {
+		if (!selectedThreadId || !result?.text) return;
+
+		if (!confirm('Send this email reply via Gmail?')) {
+			return;
+		}
+
+		setIsSending(true);
+
+		try {
+			const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+			const response = await fetch(`${apiUrl}/gmail/send`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					projectId: 'default',
+					threadId: selectedThreadId,
+					draftText: result.text,
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json().catch(() => ({}));
+				throw new Error(error.detail || 'Failed to send email');
+			}
+
+			const data = await response.json();
+
+			toast.success('Email sent successfully! ✉️');
+
+			// Optionally reset UI or show confirmation
+			// setUi("hero");
+
+		} catch (error: any) {
+			console.error('Send error:', error);
+			const errorMessage = error.message || 'Failed to send email. Please try again.';
+			toast.error(errorMessage);
+
+			// If token expired (401), show reconnect prompt
+			if (errorMessage.includes('reconnect') || errorMessage.includes('token expired')) {
+				toast.error('Please reconnect Gmail to continue.', { duration: 5000 });
+			}
+		} finally {
+			setIsSending(false);
+		}
+	};
 
 	const section = useMemo(
 		() => ({
@@ -344,9 +393,21 @@ function PlaygroundContent() {
 										<RefreshCw className="h-4 w-4 mr-2" />
 										Back to Controls
 									</Button>
-									<Button variant="secondary" disabled>
-										<Send className="h-4 w-4 mr-2" />
-										Send via Gmail
+									<Button 
+										onClick={handleSendToGmail} 
+										disabled={isSending || !result?.text}
+									>
+										{isSending ? (
+											<>
+												<RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+												Sending...
+											</>
+										) : (
+											<>
+												<Send className="h-4 w-4 mr-2" />
+												Send via Gmail
+											</>
+										)}
 									</Button>
 								</div>
 							)}

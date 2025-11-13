@@ -46,6 +46,12 @@ class RunBody(BaseModel):
     input: str  # optional user nudge like "confirm Tuesday 3pm"
     meta: dict | None = None  # { threadId, tone, length, bullets }
 
+class SendEmailBody(BaseModel):
+    projectId: str
+    threadId: str
+    draftText: str
+    subject: str | None = None
+
 # In-memory fallback before wiring Redis/Supabase
 JOBS = {}
 
@@ -114,4 +120,37 @@ def get_threads(projectId: str = Query(default="default"), maxResults: int = Que
         raise HTTPException(status_code=500, detail=f"Failed to fetch threads: {str(e)}")
 
 
-
+@app.post("/gmail/send")
+def send_email(body: SendEmailBody):
+    """
+    Send an email reply to a Gmail thread.
+    """
+    try:
+        # Resolve OAuth token
+        access_token = gmail.resolve_oauth_token(body.projectId)
+        if not access_token:
+            raise HTTPException(
+                status_code=401,
+                detail="Gmail not connected or token expired. Please reconnect Gmail."
+            )
+        
+        # Send email
+        result = gmail.send_reply(
+            thread_id=body.threadId,
+            draft_text=body.draftText,
+            access_token=access_token,
+            subject=body.subject
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        error_msg = str(e)
+        if "token expired" in error_msg.lower() or "unauthorized" in error_msg.lower():
+            raise HTTPException(status_code=401, detail=error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")

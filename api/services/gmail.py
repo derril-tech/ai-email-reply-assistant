@@ -319,3 +319,123 @@ def list_threads(project_id: str, max_results: int = 20) -> List[Dict[str, Any]]
 	except Exception as e:
 		print(f"Unexpected error listing threads: {e}")
 		return []
+
+
+def send_reply(
+	thread_id: str,
+	draft_text: str,
+	access_token: str | None,
+	subject: str | None = None
+) -> Dict[str, Any]:
+	"""
+	Send an email reply to a Gmail thread.
+	
+	Args:
+		thread_id: Gmail thread ID to reply to
+		draft_text: The email body content
+		access_token: Valid Gmail API access token
+		subject: Optional subject (defaults to "Re: " + original subject)
+		
+	Returns:
+		Dict with success status, messageId, and threadId
+		
+	Raises:
+		RuntimeError: If sending fails
+	"""
+	if not access_token:
+		raise RuntimeError("No access token available. Please reconnect Gmail.")
+	
+	if not GMAIL_API_AVAILABLE:
+		raise RuntimeError("Gmail API library not available.")
+	
+	try:
+		from email.mime.text import MIMEText
+		import base64
+		
+		# Build Gmail API client
+		credentials = Credentials(token=access_token)
+		service = build('gmail', 'v1', credentials=credentials)
+		
+		# Fetch original thread to get message IDs and recipients
+		print(f"📧 Fetching thread {thread_id} for reply metadata...")
+		thread = service.users().threads().get(
+			userId='me',
+			id=thread_id,
+			format='metadata',
+			metadataHeaders=['Subject', 'From', 'To', 'Message-ID', 'References']
+		).execute()
+		
+		if not thread.get('messages'):
+			raise RuntimeError("Thread has no messages.")
+		
+		# Get the first message (original email)
+		first_message = thread['messages'][0]
+		headers = first_message.get('payload', {}).get('headers', [])
+		
+		# Extract headers
+		original_subject = next(
+			(h['value'] for h in headers if h['name'].lower() == 'subject'),
+			'No Subject'
+		)
+		original_from = next(
+			(h['value'] for h in headers if h['name'].lower() == 'from'),
+			''
+		)
+		original_message_id = next(
+			(h['value'] for h in headers if h['name'].lower() == 'message-id'),
+			None
+		)
+		original_references = next(
+			(h['value'] for h in headers if h['name'].lower() == 'references'),
+			None
+		)
+		
+		print(f"✉️  Replying to: '{original_subject}' from {original_from}")
+		
+		# Build reply subject
+		reply_subject = subject or (
+			original_subject if original_subject.startswith('Re:')
+			else f"Re: {original_subject}"
+		)
+		
+		# Create MIME message
+		message = MIMEText(draft_text, 'plain', 'utf-8')
+		message['To'] = original_from
+		message['Subject'] = reply_subject
+		
+		# Add threading headers for proper Gmail threading
+		if original_message_id:
+			message['In-Reply-To'] = original_message_id
+			references = f"{original_references} {original_message_id}" if original_references else original_message_id
+			message['References'] = references
+		
+		# Encode message
+		raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+		
+		# Send via Gmail API
+		print(f"📤 Sending email reply...")
+		sent_message = service.users().messages().send(
+			userId='me',
+			body={
+				'raw': raw_message,
+				'threadId': thread_id  # Ensures reply is threaded
+			}
+		).execute()
+		
+		print(f"✅ Email sent successfully: {sent_message['id']}")
+		
+		return {
+			"success": True,
+			"messageId": sent_message['id'],
+			"threadId": sent_message.get('threadId', thread_id)
+		}
+		
+	except HttpError as error:
+		print(f"❌ Gmail API error sending email: {error}")
+		error_msg = str(error)
+		if "401" in error_msg or "unauthorized" in error_msg.lower():
+			raise RuntimeError("Gmail token expired. Please reconnect Gmail.")
+		raise RuntimeError(f"Gmail API error: {error}")
+	except Exception as e:
+		print(f"❌ Unexpected error sending email: {e}")
+		raise RuntimeError(f"Failed to send email: {e}")
