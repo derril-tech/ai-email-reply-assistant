@@ -6,11 +6,21 @@
 
 ---
 
-## 🎯 REQUIRED ENVIRONMENT VARIABLES
+## ⚠️ IMPORTANT: TWO-STEP SETUP REQUIRED
 
-Copy these exact values into your Vercel project settings:
+This app has **TWO** deployments:
+1. **Vercel** (Frontend - Next.js)
+2. **Railway** (Backend - API)
 
-### **1. API Server URL**
+**Both need environment variables!** Follow both sections below.
+
+---
+
+## 🎯 PART 1: VERCEL ENVIRONMENT VARIABLES (Frontend)
+
+Copy this into your Vercel project settings:
+
+### **Required:**
 
 ```bash
 NEXT_PUBLIC_API_URL=https://api-production-192f.up.railway.app
@@ -21,38 +31,58 @@ NEXT_PUBLIC_API_URL=https://api-production-192f.up.railway.app
 - Used by all hooks (useAgent, useThreads, useGmailAuth, useDashboard)
 - Powers all API calls (draft generation, Gmail OAuth, stats, etc.)
 
-**⚠️ CRITICAL:** This must be set, or the app won't connect to your backend!
+**⚠️ CRITICAL:** This must be set, or the "Connect Gmail" button won't respond!
 
 ---
 
-## 📋 OPTIONAL ENVIRONMENT VARIABLES
+## 🚂 PART 2: RAILWAY API ENVIRONMENT VARIABLES (Backend)
 
-These are **NOT required** for the web frontend but are here for reference:
+**⚠️ THIS IS CRITICAL!** You must add your Vercel URL to the Railway API server for CORS to work!
 
-### **2. Supabase URL (Backend Only)**
-
-```bash
-# NOT NEEDED ON VERCEL
-# This is only used by the API server on Railway
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-```
-
-**Why not needed:**
-- The web frontend doesn't directly connect to Supabase
-- All database operations go through the API server
-- The API server on Railway handles Supabase connections
-
-### **3. Supabase Anon Key (Backend Only)**
+### **Add this to Railway API service:**
 
 ```bash
-# NOT NEEDED ON VERCEL
-# This is only used by the API server on Railway
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+# Your Vercel deployment URL (REQUIRED for CORS)
+NEXT_PUBLIC_VERCEL_URL=https://your-app-name.vercel.app
+
+# OR use the custom domain approach:
+NEXT_PUBLIC_APP_URL=https://your-custom-domain.com
 ```
 
-**Why not needed:**
-- Same reason as above
-- API server handles all Supabase authentication
+**How to add it:**
+
+1. Go to your **Railway dashboard**
+2. Select your **API service** (not web service!)
+3. Go to **Variables** tab
+4. Click **+ New Variable**
+5. Add:
+   - **Key:** `NEXT_PUBLIC_VERCEL_URL`
+   - **Value:** `https://your-app-name.vercel.app` (your actual Vercel URL)
+6. Click **Save**
+7. Railway will auto-redeploy
+
+**Why this is needed:**
+- The API server uses this for CORS (Cross-Origin Resource Sharing)
+- Without it, the browser blocks API calls from Vercel
+- Symptoms: "Connect Gmail" button does nothing, console shows CORS errors
+
+---
+
+## 📋 COMPLETE ENVIRONMENT VARIABLE CHECKLIST
+
+### **Vercel (Frontend):**
+- ✅ `NEXT_PUBLIC_API_URL` = `https://api-production-192f.up.railway.app`
+
+### **Railway API (Backend):**
+- ✅ `NEXT_PUBLIC_VERCEL_URL` = `https://your-app-name.vercel.app` **← ADD THIS!**
+- ✅ `SUPABASE_URL` = (already set)
+- ✅ `SUPABASE_SERVICE_ROLE` = (already set)
+- ✅ `SUPABASE_SCHEMA` = `emailreply` (already set)
+- ✅ `OPENAI_API_KEY` = (already set)
+- ✅ `GOOGLE_CLIENT_ID` = (already set)
+- ✅ `GOOGLE_CLIENT_SECRET` = (already set)
+- ✅ `GOOGLE_OAUTH_REDIRECT_URI` = `https://api-production-192f.up.railway.app/auth/callback` (already set)
+- ✅ `WEB_RAILWAY_URL` = (already set, but now also need Vercel URL!)
 
 ---
 
