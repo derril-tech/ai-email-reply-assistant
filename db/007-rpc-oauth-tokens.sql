@@ -76,17 +76,18 @@ as $$
 				order by t.updated_at desc nulls last
 				limit 1
 			),
-			gen_random_uuid()
+			null
 		),
 		p_project_id, p_provider, p_access_token, p_refresh_token, p_expires_at, p_scopes, now()
 	)
-	on conflict (profile_id, project_id, provider)
+	on conflict (project_id, provider)
 	do update set
 		access_token = excluded.access_token,
 		refresh_token = excluded.refresh_token,
 		expires_at = excluded.expires_at,
 		scopes = excluded.scopes,
-		updated_at = now()
+		updated_at = now(),
+		profile_id = coalesce(emailreply.oauth_tokens.profile_id, excluded.profile_id)
 	returning *;
 $$;
 
