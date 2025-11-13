@@ -25,9 +25,9 @@ except ImportError:
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# OAuth scopes
+# OAuth scopes - gmail.readonly includes metadata access
 SCOPES = [
-	'https://www.googleapis.com/auth/gmail.readonly',  # Includes metadata access
+	'https://www.googleapis.com/auth/gmail.readonly',
 	'https://www.googleapis.com/auth/gmail.send',
 ]
 
