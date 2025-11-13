@@ -287,22 +287,20 @@ function PlaygroundContent() {
 										/>
 										<span className="font-medium">Use bullet points</span>
 									</label>
-								<Button
-									className="mt-2 w-full"
-									onClick={async () => {
-										if (!selectedThreadId) return;
-										// Don't switch UI immediately - let status control the flow
-										await run({
-											input: "",
-											meta: { threadId: selectedThreadId, tone, length, bullets },
-										});
-										// Only switch to result UI after run completes (success or error)
-										setUi("result");
-									}}
-									disabled={status === "running"}
-								>
-									{status === "running" ? <LoaderDots label="Composing polite reply" /> : "Generate Reply"}
-								</Button>
+									<Button
+										className="mt-2 w-full"
+										onClick={async () => {
+											if (!selectedThreadId) return;
+											setUi("result");
+											await run({
+												input: "",
+												meta: { threadId: selectedThreadId, tone, length, bullets },
+											});
+										}}
+										disabled={status === "running"}
+									>
+										{status === "running" ? <LoaderDots label="Composing polite reply" /> : "Generate Reply"}
+									</Button>
 								</div>
 							</Card>
 						</motion.section>
