@@ -330,7 +330,7 @@ function PlaygroundContent() {
 											});
 											setUi("result");
 										}}
-										isRegenerating={status === "running"}
+										isRegenerating={false}
 									/>
 								) : (
 									<div className="min-h-[200px] rounded-md border border-border p-4 flex items-center justify-center text-sm text-muted-foreground">
