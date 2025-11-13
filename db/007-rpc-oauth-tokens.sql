@@ -1,7 +1,21 @@
--- Created automatically by Cursor AI (2025-11-13)
 -- RPC functions to read/write emailreply.oauth_tokens via public schema (PostgREST-exposed)
 
 create extension if not exists pgcrypto;
+
+-- Ensure schema and table/columns exist to avoid function creation errors
+create schema if not exists emailreply;
+create table if not exists emailreply.oauth_tokens (
+	id uuid primary key default gen_random_uuid()
+);
+alter table emailreply.oauth_tokens add column if not exists profile_id   text;
+alter table emailreply.oauth_tokens add column if not exists project_id   text;
+alter table emailreply.oauth_tokens add column if not exists provider     text;
+alter table emailreply.oauth_tokens add column if not exists access_token text;
+alter table emailreply.oauth_tokens add column if not exists refresh_token text;
+alter table emailreply.oauth_tokens add column if not exists expires_at   timestamptz;
+alter table emailreply.oauth_tokens add column if not exists scopes       text;
+alter table emailreply.oauth_tokens add column if not exists created_at   timestamptz default now();
+alter table emailreply.oauth_tokens add column if not exists updated_at   timestamptz default now();
 
 -- Read latest token for a project/provider
 create or replace function public.get_oauth_token(
