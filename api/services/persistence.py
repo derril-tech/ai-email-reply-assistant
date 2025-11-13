@@ -109,12 +109,174 @@ def write_job_to_redis(job_key: str, value: Dict[str, Any]) -> bool:
 
 def persist_message_to_supabase(project_id: str, message: Dict[str, Any]) -> bool:
 	"""
-	Best-effort stub: In a real implementation, post to Supabase REST
-	with SUPABASE_SERVICE_ROLE and NEXT_PUBLIC_SUPABASE_URL.
+	Persist a message to Supabase emailreply.messages table.
 	"""
-	# Intentionally a no-op to keep the scaffold dependency-free.
-	_ = project_id, message
-	return False
+	try:
+		import requests
+		base_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+		service_key = os.getenv("SUPABASE_SERVICE_ROLE")
+		
+		if not base_url or not service_key:
+			print("⚠️ Supabase URL or service role key not configured")
+			return False
+		
+		url = f"{base_url.rstrip('/')}/rest/v1/messages"
+		headers = {
+			"apikey": service_key,
+			"Authorization": f"Bearer {service_key}",
+			"Content-Type": "application/json",
+			"Prefer": "return=representation",
+		}
+		
+		# Build message record
+		record = {
+			"project_id": project_id,  # Will be mapped to UUID in a real multi-project setup
+			"role": message.get("role", "assistant"),
+			"content": message.get("content", ""),
+			"meta": message.get("meta", {}),
+		}
+		
+		resp = requests.post(url, headers=headers, json=record, timeout=10)
+		if resp.status_code >= 400:
+			print(f"⚠️ Failed to persist message to Supabase: {resp.status_code} {resp.text}")
+			return False
+		
+		print(f"✅ Message persisted to Supabase: {resp.json()}")
+		return True
+		
+	except Exception as e:
+		print(f"⚠️ Error persisting message to Supabase: {e}")
+		return False
+
+
+def get_dashboard_stats(project_id: str = "default") -> Dict[str, Any]:
+	"""
+	Get dashboard statistics via RPC function.
+	"""
+	try:
+		import requests
+		base_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+		service_key = os.getenv("SUPABASE_SERVICE_ROLE")
+		
+		if not base_url or not service_key:
+			raise RuntimeError("Supabase not configured")
+		
+		url = f"{base_url.rstrip('/')}/rest/v1/rpc/get_dashboard_stats"
+		headers = {
+			"apikey": service_key,
+			"Authorization": f"Bearer {service_key}",
+			"Content-Type": "application/json",
+		}
+		body = {"p_project_id": project_id}
+		
+		resp = requests.post(url, headers=headers, json=body, timeout=10)
+		resp.raise_for_status()
+		
+		return resp.json()
+		
+	except Exception as e:
+		print(f"Error fetching dashboard stats: {e}")
+		# Return default values on error
+		return {
+			"repliesGenerated": 0,
+			"successRate": 100,
+			"avgDraftLength": 0,
+			"timeSavedMinutes": 0,
+			"activeProjects": 1,
+		}
+
+
+def get_recent_drafts(project_id: str = "default", limit: int = 10) -> list:
+	"""
+	Get recent drafts via RPC function.
+	"""
+	try:
+		import requests
+		base_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+		service_key = os.getenv("SUPABASE_SERVICE_ROLE")
+		
+		if not base_url or not service_key:
+			raise RuntimeError("Supabase not configured")
+		
+		url = f"{base_url.rstrip('/')}/rest/v1/rpc/get_recent_drafts"
+		headers = {
+			"apikey": service_key,
+			"Authorization": f"Bearer {service_key}",
+			"Content-Type": "application/json",
+		}
+		body = {"p_project_id": project_id, "p_limit": limit}
+		
+		resp = requests.post(url, headers=headers, json=body, timeout=10)
+		resp.raise_for_status()
+		
+		drafts = resp.json()
+		
+		# Format response
+		return [
+			{
+				"id": d["id"],
+				"subject": d["subject"],
+				"snippet": d["snippet"],
+				"threadId": d["thread_id"],
+				"tone": d["tone"],
+				"createdAt": d["created_at"],
+			}
+			for d in drafts
+		]
+		
+	except Exception as e:
+		print(f"Error fetching recent drafts: {e}")
+		return []
+
+
+def get_draft_by_id(draft_id: str) -> Optional[Dict[str, Any]]:
+	"""
+	Get a specific draft by ID via RPC function.
+	"""
+	try:
+		import requests
+		from uuid import UUID
+		
+		# Validate UUID
+		UUID(draft_id)
+		
+		base_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+		service_key = os.getenv("SUPABASE_SERVICE_ROLE")
+		
+		if not base_url or not service_key:
+			raise RuntimeError("Supabase not configured")
+		
+		url = f"{base_url.rstrip('/')}/rest/v1/rpc/get_draft_by_id"
+		headers = {
+			"apikey": service_key,
+			"Authorization": f"Bearer {service_key}",
+			"Content-Type": "application/json",
+		}
+		body = {"p_draft_id": draft_id}
+		
+		resp = requests.post(url, headers=headers, json=body, timeout=10)
+		resp.raise_for_status()
+		
+		drafts = resp.json()
+		if not drafts:
+			return None
+		
+		d = drafts[0]
+		return {
+			"id": d["id"],
+			"subject": d["subject"],
+			"content": d["content"],
+			"threadId": d["thread_id"],
+			"tone": d["tone"],
+			"length": d["length"],
+			"bullets": d["bullets"],
+			"createdAt": d["created_at"],
+		}
+		
+	except Exception as e:
+		print(f"Error fetching draft by ID: {e}")
+		return None
+
 
 
 def persist_gmail_thread_index(profile_id: str, normalized_thread: Dict[str, Any]) -> bool:

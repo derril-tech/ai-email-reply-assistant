@@ -87,8 +87,20 @@ def run_agent(body: RunBody):
         "input": body.input,
     }
 
-    # Best-effort persistence (stubbed / optional)
-    persistence.persist_message_to_supabase(body.projectId, result_payload)
+    # Best-effort persistence
+    message_payload = {
+        "role": "assistant",
+        "content": draft.get("text", ""),
+        "meta": {
+            "projectId": body.projectId,
+            "threadId": body.meta["threadId"],
+            "tone": body.meta.get("tone", "friendly"),
+            "length": body.meta.get("length", 70),
+            "bullets": body.meta.get("bullets", False),
+            "subject": draft.get("meta", {}).get("subject", "No Subject"),
+        },
+    }
+    persistence.persist_message_to_supabase(body.projectId, message_payload)
     persistence.write_job_to_redis(job_id, {"status": "done", "result": result_payload})
 
     JOBS[job_id] = {"status": "done", "result": result_payload, "started_at": time.time()}
@@ -101,10 +113,50 @@ def get_job(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
     return data
 
+@app.get("/dashboard/stats")
+def get_dashboard_stats(projectId: str = Query(default="default")):
+    """
+    Get dashboard statistics (replies count, success rate, time saved, etc.)
+    """
+    try:
+        stats = persistence.get_dashboard_stats(projectId)
+        return stats
+    except Exception as e:
+        print(f"Error fetching dashboard stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {str(e)}")
+
+@app.get("/dashboard/recent-drafts")
+def get_recent_drafts(projectId: str = Query(default="default"), limit: int = Query(default=10)):
+    """
+    Get recent drafts for the dashboard
+    """
+    try:
+        drafts = persistence.get_recent_drafts(projectId, limit)
+        return {"items": drafts}
+    except Exception as e:
+        print(f"Error fetching recent drafts: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch drafts: {str(e)}")
+
+@app.get("/drafts/{draft_id}")
+def get_draft_by_id(draft_id: str):
+    """
+    Get a specific draft by ID
+    """
+    try:
+        draft = persistence.get_draft_by_id(draft_id)
+        if not draft:
+            raise HTTPException(status_code=404, detail="Draft not found")
+        return draft
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching draft: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch draft: {str(e)}")
+
 @app.get("/messages")
 def get_messages(projectId: str = Query(...)):
-    # TODO: fetch from Supabase table emailreply.messages
-    return {"items": []}
+    # Legacy endpoint - redirect to recent drafts
+    return get_recent_drafts(projectId, 50)
 
 @app.get("/threads")
 def get_threads(projectId: str = Query(default="default"), maxResults: int = Query(default=20)):
