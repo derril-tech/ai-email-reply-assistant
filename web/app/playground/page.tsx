@@ -7,6 +7,7 @@ import { useGmailAuth } from "../../hooks/useGmailAuth";
 import { useThreads } from "../../hooks/useThreads";
 import LoaderDots from "../../components/LoaderDots";
 import EmptyState from "../../components/EmptyState";
+import { DraftEditor } from "../../components/DraftEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -307,38 +308,52 @@ function PlaygroundContent() {
 					)}
 				</AnimatePresence>
 
-				<AnimatePresence mode="wait">
-					{ui === "result" && (
-						<motion.section {...section}>
-							<Card className="p-6">
-								<h3 className="text-base font-semibold font-display">Draft</h3>
-								<div className="mt-3 whitespace-pre-wrap rounded-md border border-border p-4 text-sm min-h-[200px]" aria-live="polite">
-									{status === "running" ? <LoaderDots label="Generating" /> : (result?.text || "Your draft will appear here.")}
-								</div>
+			<AnimatePresence mode="wait">
+				{ui === "result" && (
+					<motion.section {...section}>
+						<Card className="p-6">
+							<h3 className="text-base font-semibold font-display">Draft</h3>
+							<div className="mt-3" aria-live="polite">
+								{status === "running" ? (
+									<div className="min-h-[200px] flex items-center justify-center">
+										<LoaderDots label="Generating" />
+									</div>
+								) : result?.text ? (
+									<DraftEditor
+										initialDraft={result.text}
+										onRegenerate={async () => {
+											if (!selectedThreadId) return;
+											setUi("compose");
+											await run({
+												input: "",
+												meta: { threadId: selectedThreadId, tone, length, bullets },
+											});
+											setUi("result");
+										}}
+										isRegenerating={status === "running"}
+									/>
+								) : (
+									<div className="min-h-[200px] rounded-md border border-border p-4 flex items-center justify-center text-sm text-muted-foreground">
+										Your draft will appear here.
+									</div>
+								)}
+							</div>
+							{result?.text && (
 								<div className="mt-6 flex flex-wrap gap-3">
 									<Button variant="outline" onClick={() => setUi("compose")}>
 										<RefreshCw className="h-4 w-4 mr-2" />
-										Regenerate
+										Back to Controls
 									</Button>
-									<Button
-										variant="secondary"
-										onClick={() => {
-											navigator.clipboard.writeText(result?.text || "");
-											toast.success("Copied to clipboard");
-										}}
-									>
-										<Copy className="h-4 w-4 mr-2" />
-										Copy
-									</Button>
-									<Button>
+									<Button variant="secondary" disabled>
 										<Send className="h-4 w-4 mr-2" />
 										Send via Gmail
 									</Button>
 								</div>
-							</Card>
-						</motion.section>
-					)}
-				</AnimatePresence>
+							)}
+						</Card>
+					</motion.section>
+				)}
+			</AnimatePresence>
 			</div>
 		</div>
 	);
