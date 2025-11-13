@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import RedirectResponse
 import os
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Try Google OAuth imports
 try:
@@ -167,7 +167,6 @@ async def oauth_callback(
 			except Exception:
 				from services import supabase_rest  # type: ignore
 			token_record = {
-				"profile_id": project_id,  # TODO: Replace with real user ID from Supabase auth
 				"project_id": project_id,
 				"provider": "google",
 				"access_token": credentials.token,
@@ -217,9 +216,10 @@ def auth_status(project_id: str = Query(default="default")):
 		if token:
 			# Check if token is expired
 			if token.get("expires_at"):
-				from datetime import datetime
 				expires_at = datetime.fromisoformat(token["expires_at"])
-				is_expired = datetime.utcnow() >= expires_at
+				if expires_at.tzinfo is None:
+					expires_at = expires_at.replace(tzinfo=timezone.utc)
+				is_expired = datetime.now(timezone.utc) >= expires_at
 				
 				return {
 					"connected": not is_expired,

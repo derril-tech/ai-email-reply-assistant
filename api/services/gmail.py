@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Any, List, Optional
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Try imports
 try:
@@ -89,7 +89,10 @@ def resolve_oauth_token(project_id: str) -> str | None:
 			# Check if expired
 			if token.get("expires_at"):
 				expires_at = datetime.fromisoformat(token["expires_at"])
-				now = datetime.utcnow()
+				# Normalize to timezone-aware UTC
+				if expires_at.tzinfo is None:
+					expires_at = expires_at.replace(tzinfo=timezone.utc)
+				now = datetime.now(timezone.utc)
 				print(f"⏰ Token expires: {expires_at}, Now: {now}")
 				if now >= expires_at:
 					print(f"❌ Token expired for project {project_id}")
