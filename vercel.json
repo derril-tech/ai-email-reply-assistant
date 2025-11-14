@@ -8,8 +8,7 @@
     {
       "source": "/:path*",
       "destination": "https://web-production-5e03f.up.railway.app/:path*",
-      "permanent": false,
-      "statusCode": 302
+      "permanent": false
     }
   ]
 }
